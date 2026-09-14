@@ -1,8 +1,8 @@
-# Smart House Dingtian Manager — 1.1.0
+# Smart House Dingtian Manager — 1.1.1
 
 Aplicativo/add-on para **Home Assistant OS com Supervisor**, instalado pela tela **Aplicativos**. Organiza módulos Dingtian de **8, 16 ou 32 saídas**, com uma página por módulo e teste individual de relé antes de definir nome, tipo ou uso.
 
-**1.1.0 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
+**1.1.1 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
 
 ## Instalar como aplicativo
 
@@ -18,7 +18,7 @@ O aplicativo usa a conexão MQTT existente do Home Assistant pela API interna do
 
 [Instalação, atualização e migração](dingtian_manager/DOCS.md) · [Pacotes e releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases) · [Evidências dos testes](docs/TEST_RESULTS.md)
 
-## Atualização 1.1.0
+## Atualização 1.1.1
 
 Interface com lista compacta de módulos, busca e layout para celular. Cada canal permite testar o relé e editar **nome, cômodo, tipo e uso**. Os campos salvam automaticamente, com feedback e recuperação de rascunho; não existe dependência de botão no rodapé. O cômodo usa as áreas existentes do Home Assistant e é aplicado individualmente à entidade do canal.
 
@@ -54,7 +54,7 @@ Inventário, UUIDs, sequência de módulos e diário Discovery ficam em `/data/i
 
 Atualize pela própria tela do aplicativo. A antiga integração continua no código para compatibilidade/migração, mas **não deve permanecer ativa simultaneamente com o aplicativo**. O backend bloqueia alterações nessa condição. A migração é explícita, importa o cadastro preservando IDs e aceita somente destino vazio; siga [DOCS.md](dingtian_manager/DOCS.md).
 
-O arquivo `smart-house-dingtian-manager-addon-1.1.0.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
+O arquivo `smart-house-dingtian-manager-addon-1.1.1.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
 
 ## Desenvolvimento
 

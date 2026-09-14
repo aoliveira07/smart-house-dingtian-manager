@@ -1,4 +1,4 @@
-# Instalação e uso — aplicativo 1.1.0
+# Instalação e uso — aplicativo 1.1.1
 
 ## Requisitos
 
@@ -9,11 +9,11 @@ Home Assistant OS/Supervisor, Core 2026.9.2+, CPU amd64 ou aarch64, administrado
 1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
 2. Em **⋮ → Repositórios**, adicione `https://github.com/aoliveira07/smart-house-dingtian-manager`.
 3. Atualize a loja e abra **Smart House Dingtian Manager**.
-4. Instale a **1.1.0**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
+4. Instale a **1.1.1**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
 
 Não instale o ZIP de integração pelo HACS para obter o aplicativo. Não é necessário reiniciar o Core para instalar este aplicativo. Seu inventário começa vazio.
 
-Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.1.0.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
+Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.1.1.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
 
 ## Primeiro módulo e teste
 
@@ -63,4 +63,4 @@ Para desinstalar definitivamente e limpar as entidades deste gerenciador, use **
 - **Resultado físico não confirmado:** observe a carga antes de decidir o próximo comando; não suponha OFF.
 - **Cadastro alterado:** use Revisar / tentar novamente para conferir a edição e a versão salva pela outra sessão.
 
-A versão 1.1.0 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
+A versão 1.1.1 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.

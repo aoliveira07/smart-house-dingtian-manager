@@ -29,7 +29,8 @@ export class DingtianPanel extends HTMLElement {
   constructor() {
     super(); this.attachShadow({mode: 'open'}); this.data = null; this.draft = null;
     this.dirty = false; this.busy = false; this.error = ''; this.active = ''; this.loaded = false; this.localPending = new Set();
-    try {this.editorId=window.sessionStorage.getItem(`${DOMAIN}:editor`) || crypto.randomUUID();window.sessionStorage.setItem(`${DOMAIN}:editor`,this.editorId);}catch{this.editorId='default';}
+    this.editorId=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    try {this.editorId=window.sessionStorage.getItem(`${DOMAIN}:editor`) || this.editorId;window.sessionStorage.setItem(`${DOMAIN}:editor`,this.editorId);}catch{}
     this.onPop = () => this.readRoute();
     this.saveMessage = 'Salvo'; this.saveError = ''; this.saving = null;
     this.onHidden = () => {if(document.visibilityState==='hidden' && this.dirty) this.save();};

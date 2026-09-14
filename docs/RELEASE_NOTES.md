@@ -1,4 +1,6 @@
-# Smart House Dingtian Manager 1.1.0
+# Smart House Dingtian Manager 1.1.1
+
+Correção 1.1.1: rascunhos isolados por aba também no acesso HTTP por IP local.
 
 Módulos em lista compacta, canais em linhas responsivas e edição com salvamento automático. A nova coluna **Cômodo** permite escolher uma área existente do Home Assistant para cada relé.
 
@@ -15,4 +17,4 @@ Instalação e atualização pela página **Configurações → Aplicativos → 
 
 O novo campo `area_id` é opcional e compatível com cadastros anteriores. Áreas são administradas no Home Assistant. Uma escolha em canal ainda não utilizado fica salva e é aplicada quando sua entidade for criada. Não são criadas áreas automaticamente.
 
-O pacote principal é `smart-house-dingtian-manager-addon-1.1.0.zip`. Os ZIPs de integração são apenas compatibilidade. A publicação é condicionada aos testes e aos contêineres amd64/aarch64 aprovados na CI. Capturas de desktop e celular usam dados fictícios; nenhum comando de relé residencial é necessário para validar esta interface.
+O pacote principal é `smart-house-dingtian-manager-addon-1.1.1.zip`. Os ZIPs de integração são apenas compatibilidade. A publicação é condicionada aos testes e aos contêineres amd64/aarch64 aprovados na CI. Capturas de desktop e celular usam dados fictícios; nenhum comando de relé residencial é necessário para validar esta interface.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Recuperação de rascunhos por aba também em acesso HTTP pelo IP local, sem depender de APIs restritas a HTTPS.
+- Inclui a interface compacta, salvamento automático e cômodo por relé da versão 1.1.0.
+
+
 ## 1.1.0
 
 - Módulos em linhas compactas com busca e layout mobile.

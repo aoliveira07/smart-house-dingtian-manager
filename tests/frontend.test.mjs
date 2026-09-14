@@ -174,3 +174,13 @@ test('polling does not erase the module search',async()=>{
   assert.equal(node.shadowRoot.querySelector('[type=search]'),search);
   assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
 });
+
+test('draft ownership is unique per tab and survives reload on local HTTP',async()=>{
+  const key='smart_house_dingtian:editor';window.sessionStorage.removeItem(key);
+  const first=document.createElement('smart-house-dingtian-panel');
+  const reloaded=document.createElement('smart-house-dingtian-panel');
+  assert.equal(first.editorId,reloaded.editorId);assert.notEqual(first.editorId,'default');
+  window.sessionStorage.removeItem(key); // Another browser tab has its own session storage.
+  const other=document.createElement('smart-house-dingtian-panel');
+  assert.notEqual(first.editorId,other.editorId);
+});

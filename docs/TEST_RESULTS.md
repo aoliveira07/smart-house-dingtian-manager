@@ -1,3 +1,7 @@
+# Atualização 1.1.1 — rascunhos em acesso local
+
+Teste adicional verifica identidade própria de rascunho para cada aba e recuperação após recarga, sem usar `crypto.randomUUID` (restrito a contextos seguros). Total: **41 testes de núcleo/aplicativo + 15 de frontend + 5 de HA = 61**, além dos builds/smoke tests de contêiner.
+
 # Atualização 1.1.0 — UI e cômodos
 
 Validação local: **41 testes de núcleo/aplicativo e 14 testes de interface aprovados**. A CI executa também os 5 testes com HA Core real (transporte MQTT isolado), incluindo seleção/remoção de área pela API e preservação ao trocar o tipo da entidade, além dos dois builds/smoke tests de contêiner. A publicação depende desses jobs.
