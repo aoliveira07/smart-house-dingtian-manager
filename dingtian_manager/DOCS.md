@@ -1,12 +1,12 @@
-# Dingtian Manager 1.3.0
+# Dingtian Manager 1.4.0
 
 Instale ou atualize pela loja de Aplicativos do Home Assistant. Repositório: https://github.com/aoliveira07/smart-house-dingtian-manager. Requer Core 2026.9.2+, Supervisor e MQTT configurado com Discovery.
 
 ## Uso
 
-Cadastre módulos de 8, 16 ou 32 entradas. Abra as entradas para editar nome, cômodo, tipo e uso, com salvamento automático. Nome do módulo e serial ficam disponíveis somente no lápis da lista. Alterar serial substitui os tópicos preservando a identidade lógica; use um equipamento com a mesma capacidade.
+Cadastre módulos de 8, 16 ou 32 saídas. Abra as saídas para editar nome, cômodo, tipo e uso, com salvamento automático. Nome do módulo e serial ficam disponíveis somente no lápis da lista. Alterar serial substitui os tópicos preservando a identidade lógica; use um equipamento com a mesma capacidade.
 
-O filtro por cômodo limita os módulos e entradas. Cada controle Acionar / Desacionar envia ON / OFF, QoS 0, retain false. A interface não aguarda feedback e não representa o estado físico. Controles coletivos atuam somente sobre entradas em uso na seleção. Os comandos exigem conexão com o broker, não são enfileirados e não são reenviados após falha. O estado e a disponibilidade das entidades no HA continuam vindo dos tópicos MQTT.
+O filtro por cômodo seleciona as saídas do módulo aberto. Os controles coletivos atuam somente nas saídas marcadas como Usar. Cada clique envia ON/OFF imediatamente, QoS 0, retain false. O botão mostra o comando por dois segundos, depois acompanha um novo feedback MQTT. Sem retorno, volta visualmente para Desligado; isso não envia OFF automático nem confirma o estado físico. Mensagens antigas não contam como resposta. Os comandos não são enfileirados nem reenviados após falha.
 
 ## Entidades independentes e atualização
 
@@ -18,4 +18,15 @@ Não carregue o YAML de referência junto com entidades de mesmo unique_id geren
 
 ## Recuperação
 
-Use backup do HA antes de atualizar. Exportar cadastro salva o inventário. Importar é permitido apenas em aplicativo vazio. Dados persistem em /data. A limpeza de remoção do gerenciador remove suas entidades e Discovery, mas não envia OFF aos equipamentos. O painel é restrito a administradores via Ingress.
+Use backup do HA para recuperação integral. O Excel é um relatório das saídas cadastradas, não um backup restaurável. Dados persistem em /data. Remover uma saída ou módulo limpa as entidades correspondentes. O painel é restrito a administradores via Ingress.
+
+## Interface 1.4.0
+
+- Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
+- Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
+- Exportar para Excel (.xlsx): saídas cadastradas, com Nome do módulo, Saída do módulo, Nome, Cômodo e Tipo (Luz ou Switch). Cabeçalho congelado e filtro nas colunas.
+- Tela de saídas com filtro alinhado ao cômodo; comandos da seleção aparecem após escolher um cômodo e respeitam Usar.
+- Botão único Ligado/Desligado: envia imediatamente e mostra o comando por dois segundos. Depois usa novo feedback MQTT; sem retorno volta visualmente a Desligado, sem enviar OFF automático.
+- Entidades MQTT independentes e personalizações preservadas.
+
+Validação: 53 testes Python, 20 testes da interface; CI também valida Home Assistant real e containers amd64/aarch64.

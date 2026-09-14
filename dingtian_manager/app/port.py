@@ -21,6 +21,7 @@ class RemotePort:
         self.areas = {}
         self.states = {}
         self.received = {}
+        self.state_versions = {}
         self.discovery_seen = {}
         self.debug = []
         self.subscriptions = {}
@@ -195,7 +196,7 @@ class RemotePort:
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.3.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.4.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -219,6 +220,7 @@ class RemotePort:
                 channel["state"] = (
                     raw if self.connected and lwt == "online" and raw in ("ON", "OFF") else "unknown"
                 )
+                channel["state_version"] = self.state_versions.get(channel["topics"]["state_topic"], 0)
                 channel["test"] = dict(self.tests.get(module, channel))
         return state
 
@@ -348,6 +350,8 @@ class RemotePort:
                     pass
         else:
             self.received[topic] = raw
+            if not message.get("retain", False):
+                self.state_versions[topic] = self.state_versions.get(topic, 0) + 1
             self.tests.receive(topic, raw, message.get("retain", False))
             if topic.endswith("/lwt_availability") and raw != "online":
                 base = topic.rsplit("/", 1)[0] + "/"

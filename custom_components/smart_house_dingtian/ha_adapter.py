@@ -27,6 +27,7 @@ class HAPort:
         self.unsubs = []
         self.module_unsubs = {}
         self.received = {}
+        self.state_versions = {}
         self.discovery_seen = {}
         self.pending_echo = {}
         self.closed = False
@@ -145,6 +146,7 @@ class HAPort:
                 c["effective_area_id"] = c.get("area_id") or module["area_id"]
                 c["effective_name"] = current.name if current else c["display_name"]
                 c["topics"] = addresses
+                c["state_version"] = self.state_versions.get(addresses["state_topic"], 0)
                 c["test"] = dict(self.tests.get(module, c))
                 raw = self.received.get(addresses["state_topic"])
                 c["state"] = raw if self.connected and lwt == "online" and raw in ("ON", "OFF") else "unknown"
@@ -448,6 +450,8 @@ class HAPort:
             @callback
             def received(msg):
                 self.received[msg.topic] = msg.payload
+                if not msg.retain:
+                    self.state_versions[msg.topic] = self.state_versions.get(msg.topic, 0) + 1
                 self.tests.receive(msg.topic, msg.payload, msg.retain)
                 if msg.topic.endswith("/lwt_availability") and msg.payload != "online":
                     base = msg.topic.rsplit("/", 1)[0] + "/"

@@ -4,7 +4,7 @@ import {Window} from 'happy-dom';
 
 const window = new Window({url:'http://localhost/smart-house-dingtian'});
 for(const key of ['window','document','HTMLElement','customElements','history','location','Event','CustomEvent'])globalThis[key]=window[key];
-await import('../frontend/panel.js');
+const {excelWorkbook}=await import('../frontend/panel.js');
 const tick = () => new Promise(resolve=>setTimeout(resolve,20));
 function moduleData(n,count){return {module_uuid:String(n).padStart(32,'0'),technical_id:`Cabeado${n}`,serial:`000${n}`,channel_count:count,display_name:`Quadro ${n}`,used_count:0,availability:'unknown',channels:Array.from({length:count},(_,i)=>({number:i+1,enabled:false,entity_type:'light',display_name:`Saída ${i+1}`,unique_id:`Cabeado${n}-r${i+1}`,last_entity_ids:{},entity_id:null,state:'unknown',topics:{}}))};}
 async function panel(modules=[]){
@@ -78,7 +78,7 @@ test('commands ignore reported state and pending feedback but require broker con
  assert.equal(control.querySelectorAll('button:disabled').length,0);
  assert.ok(!control.textContent.includes('aguardando'));
  data.broker_connected=false;await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
- assert.equal(control.querySelectorAll('button:disabled').length,2);
+ assert.equal(control.querySelectorAll('button:disabled').length,1);
  assert.equal(requests.filter(r=>r.action==='command').length,0);
 });
 
@@ -96,10 +96,10 @@ test('explicit ON and OFF commands need no state feedback or confirmation',async
  const control=node.shadowRoot.querySelector('[data-test="1"]');
  control.querySelector('button').click();control.querySelector('button').click();await tick();
  assert.equal(requests.filter(r=>r.action==='command').length,1);
- node.shadowRoot.querySelector('[data-test="1"] button+button').click();await tick();
+ node.shadowRoot.querySelector('[data-test="1"] button').click();await tick();
  const commands=requests.filter(r=>r.action==='command');assert.deepEqual(commands.map(c=>c.data.payload),['ON','OFF']);
  assert.equal(node.shadowRoot.querySelector('[role=switch]'),null);
- assert.ok(node.shadowRoot.querySelector('.channel').textContent.includes('Entrada 1'));
+ assert.ok(node.shadowRoot.querySelector('.channel').textContent.includes('Saída 1'));
  assert.ok(!node.shadowRoot.textContent.includes('Estado desconhecido'));
 });
 
@@ -157,11 +157,14 @@ test('debounce saves channels and module identity is read only here',async()=>{
   assert.equal(requests.filter(r=>r.action==='command').length,0);
 });
 
-test('polling does not erase the module search',async()=>{
-  const {node}=await panel([moduleData(1,8),moduleData(2,32)]);
-  const search=node.shadowRoot.querySelector('[type=search]');search.value='Quadro 2';search.dispatchEvent(new Event('input'));await node.load();
-  assert.equal(node.shadowRoot.querySelector('[type=search]'),search);
-  assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
+test('overview has compact header, export and no filters, search or maintenance',async()=>{
+ const {node}=await panel([moduleData(1,8),moduleData(2,32)]);
+ assert.equal(node.shadowRoot.querySelector('[type=search]'),null);
+ assert.equal(node.shadowRoot.querySelector('.filter-bar'),null);
+ assert.equal(node.shadowRoot.querySelector('details'),null);
+ assert.match(node.shadowRoot.querySelector('header').textContent,/Módulos/);
+ assert.match(node.shadowRoot.textContent,/Exportar para Excel/);
+ assert.ok(!node.shadowRoot.textContent.includes('Importar'));
 });
 
 test('draft ownership is unique per tab and survives reload on local HTTP',async()=>{
@@ -175,21 +178,47 @@ test('draft ownership is unique per tab and survives reload on local HTTP',async
 });
 
 
-test('area filter selects matching modules and channels, counts live state and scopes bulk command',async()=>{
- const a=moduleData(1,8),b=moduleData(2,8);a.availability=b.availability='online';
+test('room filter shows scoped group actions only after selecting a room',async()=>{
+ const a=moduleData(1,8),b=moduleData(2,8);
  a.channels[0].enabled=a.channels[1].enabled=b.channels[0].enabled=true;
  a.channels[0].area_id='cozinha';a.channels[1].area_id='sala';b.area_id='sala';
- a.channels[0].state='ON';a.channels[1].state=b.channels[0].state='OFF';
- const {node,requests,data}=await panel([a,b]);
+ const {node,requests}=await panel([a,b]);await node.navigate(a.module_uuid);
+ assert.equal(node.shadowRoot.querySelector('.selection-actions').hidden,true);
  const filter=node.shadowRoot.querySelector('[aria-label="Filtrar por cômodo"]');filter.value='cozinha';filter.dispatchEvent(new Event('change'));
- assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
- assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/1 luzes · 1 entradas em uso/);
+ assert.equal(node.shadowRoot.querySelector('.selection-actions').hidden,false);
+ assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,1);
  const original=node.hass.callWS;node.hass.callWS=async msg=>{if(msg.action==='operate_group'){requests.push(msg);return {sent:[{module_uuid:a.module_uuid,number:1}]};}return original(msg);};
  node.shadowRoot.querySelector('.group-off').click();node.shadowRoot.querySelector('.group-off').click();await tick();
  const batch=requests.filter(r=>r.action==='operate_group');assert.equal(batch.length,1);assert.deepEqual(batch[0].data,{module_ids:[a.module_uuid],area_id:'cozinha',payload:'OFF'});
- await node.navigate(a.module_uuid);assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,1);
- const power=node.shadowRoot.querySelector('[data-test="1"] button');assert.equal(power.textContent,'Acionar');assert.equal(power.getAttribute('aria-checked'),null);
- data.modules[a.module_uuid].channels[0].state='OFF';await node.load();assert.ok(!node.shadowRoot.querySelector('[data-summary]').textContent.includes('acionados'));
+ await node.navigate('');assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,2);
+});
+
+test('command is immediate, after two seconds only fresh feedback can confirm ON',async()=>{
+ const m=moduleData(1,8);m.channels[0].state='OFF';m.channels[0].state_version=1;
+ const {node,data,requests}=await panel([m]);await node.navigate(m.module_uuid);
+ const get=()=>node.shadowRoot.querySelector('[data-test="1"] button');
+ get().click();assert.equal(get().textContent,'Ligado');await tick();
+ assert.equal(requests.filter(r=>r.action==='command')[0].data.payload,'ON');
+ await new Promise(r=>setTimeout(r,2100));assert.equal(get().textContent,'Desligado');
+ get().click();await tick();data.modules[m.module_uuid].channels[0].state='ON';data.modules[m.module_uuid].channels[0].state_version=2;await node.load();
+ await new Promise(r=>setTimeout(r,2100));assert.equal(get().textContent,'Ligado');
+ get().click();await tick();assert.equal(get().textContent,'Desligado');
+ await new Promise(r=>setTimeout(r,2100));assert.equal(get().textContent,'Desligado'); // stale ON is not a reply
+ data.modules[m.module_uuid].channels[0].state_version=3;await node.load();assert.equal(get().textContent,'Ligado');
+});
+
+test('failed command rolls back the optimistic button and exposes error',async()=>{
+ const m=moduleData(1,8);m.channels[0].state='OFF';const {node}=await panel([m]);await node.navigate(m.module_uuid);
+ const original=node.hass.callWS;node.hass.callWS=msg=>{if(msg.action==='command')throw new Error('Falha de envio');return original(msg);};
+ node.shadowRoot.querySelector('[data-test="1"] button').click();await tick();
+ assert.equal(node.shadowRoot.querySelector('[data-test="1"] button').textContent,'Desligado');assert.match(node.error,/Falha de envio/);
+});
+
+test('xlsx cells preserve accents, special characters and formula-like names as literal strings',()=>{
+ const bytes=excelWorkbook([['Nome do módulo','Saída do módulo','Nome','Cômodo','Tipo'],['Quadro & <1>','Saída 1','=1+1','Área','Luz']]);
+ const text=new TextDecoder().decode(bytes);
+ assert.equal(new DataView(bytes.buffer).getUint32(0,true),0x04034b50);
+ assert.match(text,/inlineStr/);assert.match(text,/Quadro &amp; &lt;1&gt;/);assert.match(text,/Área/);assert.match(text,/>=1\+1</);assert.ok(!text.includes('<f>'));
 });
 
 test('overview edits serial and name together, preserving channels and showing rejected edits',async()=>{

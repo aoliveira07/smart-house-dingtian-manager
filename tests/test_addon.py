@@ -586,6 +586,16 @@ async def test_direct_commands_do_not_wait_for_state_or_availability(tmp_path):
     assert [p[1] for p in client.published] == ["ON", "OFF"]
     assert all(p[2:] == (0, False) for p in client.published)
     assert not port.tests.timers and not port.tests.items
+    state_topic = "/Cabeado/relay00123/out/r1"
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    client.receive(state_topic, "ON", retain=True)
+    snapshot = manager.snapshot()["modules"][mid]["channels"][0]
+    assert snapshot["state_version"] == 0
+    client.receive(state_topic, "ON")
+    snapshot = manager.snapshot()["modules"][mid]["channels"][0]
+    assert snapshot["state"] == "ON" and snapshot["state_version"] == 1
+    client.receive(state_topic, "ON")
+    assert manager.snapshot()["modules"][mid]["channels"][0]["state_version"] == 2
     client.broker = False
     with pytest.raises(ManagerError):
         await manager.operate(mid, 1, "ON", True, 1, direct=True)

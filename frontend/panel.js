@@ -11,7 +11,11 @@ const css = `
  @media(max-width:760px){main{padding:18px 12px 28px}h1{font-size:24px}.eyebrow{font-size:9px;letter-spacing:1.4px;margin-bottom:6px}header p.muted{display:none}nav{display:none}.module-picker{display:flex;gap:8px;align-items:center;margin-top:16px}.module-picker select{min-width:0;flex:1}.bar{margin:18px 0 12px;gap:10px}.bar h2{font-size:19px}.bar>.primary{font-size:13px;padding:8px 10px}.module-row{grid-template-columns:minmax(0,1fr) auto;padding:12px;gap:8px 12px}.module-row .module-title{grid-column:1;grid-row:1}.module-row .usage{grid-column:2;grid-row:1;text-align:right}.module-row .serial{grid-column:1/-1;grid-row:2;max-width:calc(100% - 184px)}.module-row .actions{grid-column:1/-1;grid-row:2;justify-content:flex-end}.module-row .actions .primary{font-size:12px;padding:8px}.module-row h3{font-size:15px}.module-row .actions{gap:4px}.module-row .icon-button{width:44px}.module-row .meta-item{font-size:13px}.module-row .serial small{display:none}.module-row .serial strong::before{content:'Serial ';font-weight:400}.module-header{display:block}.module-header label{margin-top:12px;width:100%}.module-header p{font-size:12px}.helper{font-size:12px}.save-bar{position:sticky;top:0;z-index:2;background:var(--primary-background-color,#f4f7f8);padding:8px 0;margin:0}.save-bar button{font-size:12px;padding:6px 10px}.channels{margin-top:6px}.channel-head{display:none}.channel{grid-template-columns:32px minmax(0,1fr) minmax(100px,1fr);gap:6px 10px;padding:10px 12px}.channel .position{grid-column:1;grid-row:1}.channel .test-control{grid-column:2;grid-row:1;justify-self:start;max-width:100%}.channel .channel-name{grid-column:1/-1;grid-row:2}.channel .channel-area{grid-column:1/3;grid-row:3}.channel .channel-type{grid-column:3;grid-row:3}.channel .channel-use{grid-column:3;grid-row:1;justify-content:flex-end;font-size:12px;gap:8px}.channel-use span{display:inline}.channel input,.channel select{font-size:16px}.test-control small{max-width:240px}.test-control .actions{justify-content:flex-end}.module-details{margin-top:12px}dialog{padding:20px}}
  main{padding-top:14px}h1{font-size:23px;margin-bottom:0}.eyebrow,header p.muted{display:none}.bar{margin:12px 0}.back-modules{margin-top:0;padding:6px 12px}.filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0;padding:10px 12px;background:var(--card-background-color,#fff);border:1px solid var(--divider-color,#dbe3e6);border-radius:10px}.filter-bar label{min-width:180px;flex:1;max-width:260px}.filter-bar .count{flex:1;min-width:200px}.filter-bar .actions button{font-size:13px;padding:8px 12px}.relay-switch{width:44px;height:44px;border-radius:50%;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--divider-color,#bdcdd2);background:var(--secondary-background-color,#e7ecee);font-size:24px;color:var(--secondary-text-color,#60747d)}.relay-switch[aria-checked=true],.relay-switch:not([role])[data-power=ON]{background:var(--primary-color,#087f8c);color:white}.relay-switch:not([role])[data-power=OFF]{background:var(--secondary-background-color,#e7ecee)}.module-header{margin:10px 0}.module-header h2{font-size:19px}.save-bar{margin:4px 0}.helper{margin:4px 0 8px}@media(max-width:760px){.filter-bar{gap:8px;padding:8px}.filter-bar label{max-width:none;min-width:100%;}.filter-bar .actions{width:100%}.filter-bar .actions button{flex:1}h1{font-size:22px}}
  :host{--primary-background-color:#10232a;--card-background-color:#183039;--secondary-background-color:#213e49;--primary-text-color:#eef7f8;--secondary-text-color:#b1cbd2;--divider-color:#375763;--primary-color:#76d4e2;--text-primary-color:#102b34;--success-color:#9de4d4;--error-color:#ffb4b4;color-scheme:dark}.channel,.channel-head{grid-template-columns:80px 220px minmax(130px,1.4fr) minmax(120px,1fr) 100px 50px;gap:12px}.test-control .direct-control{display:flex;gap:0;width:100%}.test-control .direct-control button{flex:1;min-height:44px;border-radius:8px 0 0 8px;background:var(--secondary-background-color);padding:8px 10px;font-size:13px}.test-control .direct-control button+button{border-radius:0 8px 8px 0;border-left:0}.module-header .badge{display:none}.channel .position{font-size:13px;white-space:nowrap}.module-row{background:var(--card-background-color)}@media(max-width:1000px) and (min-width:761px){.channel,.channel-head{grid-template-columns:70px 180px minmax(100px,1fr) minmax(110px,1fr) 85px 40px;gap:8px}}@media(max-width:760px){.channel{grid-template-columns:70px minmax(0,1fr);gap:10px}.channel .position{grid-column:1;grid-row:1}.channel .test-control{grid-column:2;grid-row:1;width:100%;justify-self:stretch}.channel .channel-name{grid-column:1/-1;grid-row:2}.channel .channel-area{grid-column:1/-1;grid-row:3}.channel .channel-type{grid-column:1;grid-row:4}.channel .channel-use{grid-column:2;grid-row:4}.test-control .direct-control button{font-size:12px;padding:6px}}
-`;
+
+ header{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--divider-color)}header>.primary,header>.back-modules{justify-self:end}.header-center{text-align:center}.header-center h2{font-size:22px;margin:0}.header-center p{margin:2px 0 0}.channel,.channel-head,.filter-bar{grid-template-columns:80px 124px minmax(140px,1.4fr) minmax(150px,1fr) 100px 50px;gap:14px}.filter-bar{display:grid;background:transparent;border:0;padding:4px 14px;margin:8px 0 12px}.filter-bar .selection-actions{grid-column:1/4;justify-content:flex-start;min-width:0}.filter-bar label{grid-column:4;max-width:none;min-width:0;width:100%}.command-toggle{width:124px;min-height:44px;background:#414e55;color:var(--primary-text-color);font-size:14px;padding:8px}.command-toggle[aria-pressed=true]{background:var(--primary-color);color:var(--text-primary-color);border-color:transparent}.save-bar{min-height:20px}.helper{margin-bottom:8px}
+ @media(max-width:1000px) and (min-width:761px){.channel,.channel-head,.filter-bar{grid-template-columns:65px 124px minmax(100px,1fr) minmax(120px,1fr) 85px 40px;gap:8px}}
+ @media(max-width:760px){header{grid-template-columns:1fr auto;gap:12px}header h1{font-size:20px}.header-center{grid-column:1/-1;grid-row:2;text-align:left}.header-center h2{font-size:19px}header>.primary,header>.back-modules{grid-column:2;grid-row:1;font-size:12px;padding:8px}.filter-bar{display:flex;flex-wrap:wrap;padding:0}.filter-bar label{order:0;min-width:100%}.filter-bar .selection-actions{order:1;width:100%}.channel{grid-template-columns:70px minmax(0,1fr);gap:10px}.command-toggle{width:124px}.channel .test-control{justify-self:start}.save-bar{position:static}}
+`; 
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -30,7 +34,7 @@ const statusLabel = value => ({online: 'Conectado', offline: 'Desconectado', bro
 export class DingtianPanel extends HTMLElement {
   constructor() {
     super(); this.attachShadow({mode: 'open'}); this.data = null; this.draft = null;
-    this.dirty = false; this.busy = false; this.error = ''; this.active = ''; this.loaded = false; this.localPending = new Set();
+    this.dirty = false; this.busy = false; this.error = ''; this.active = ''; this.loaded = false; this.localPending = new Set(); this.commandStates = new Map(); this.feedbackTimers = new Set();
     this.editorId=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
     try {this.editorId=window.sessionStorage.getItem(`${DOMAIN}:editor`) || this.editorId;window.sessionStorage.setItem(`${DOMAIN}:editor`,this.editorId);}catch{}
     this.onPop = () => this.readRoute();
@@ -51,7 +55,7 @@ export class DingtianPanel extends HTMLElement {
   }
   disconnectedCallback() {
     this.unsubscribe?.(); this.unsubscribe = null; this.loaded = false;
-    clearTimeout(this.refreshTimer); clearTimeout(this.saveTimer); document.removeEventListener('visibilitychange', this.onHidden); window.removeEventListener('popstate', this.onPop);
+    clearTimeout(this.refreshTimer); clearTimeout(this.saveTimer); for(const timer of this.feedbackTimers)clearTimeout(timer);this.feedbackTimers.clear(); document.removeEventListener('visibilitychange', this.onHidden); window.removeEventListener('popstate', this.onPop);
     window.removeEventListener('beforeunload', this.onUnload); window.removeEventListener('hashchange', this.onPop);
   }
   async initialize() {
@@ -107,7 +111,7 @@ export class DingtianPanel extends HTMLElement {
     if(node){node.textContent=this.saveError || this.cacheError || this.saveMessage;node.dataset.error=String(Boolean(this.saveError||this.cacheError));node.dataset.pending=String(this.dirty);}
     const retry=this.shadowRoot.querySelector('[data-retry]');if(retry)retry.hidden=!this.saveError;
     const title=this.shadowRoot.querySelector('[data-title]');if(title)title.textContent=this.draft?.display_name || 'Módulo';
-    const count=this.shadowRoot.querySelector('[data-used]');if(count)count.textContent=`${this.draft.channels.filter(c=>c.enabled).length} utilizados`;
+    const count=this.shadowRoot.querySelector('[data-used]');if(count)count.textContent=`${this.draft.channels.filter(c=>c.enabled).length} de ${this.draft.channel_count} saídas utilizadas`;
     this.updateStates();
   }
   testWarning() {return false;}
@@ -134,24 +138,35 @@ export class DingtianPanel extends HTMLElement {
   fillTest(node,m,c) {
     const pending=this.localPending.has(c.number);
     const allowed=this.data.broker_connected&&!this.data.error&&!this.busy&&!this.groupBusy&&!this.saving&&!this.dirty&&!pending&&this.editRevision===this.data.revision;
-    const signature=JSON.stringify([pending,allowed]);
+    const key=`${m.module_uuid}:${m.serial}:${c.number}`;
+    const command=this.commandStates.get(key);
+    const optimistic=command && Date.now()<command.until;
+    const fresh=!command||(c.state_version??0)!==command.version;
+    const state=optimistic?command.payload:fresh?c.state:'unknown';
+    const known=state==='ON'||state==='OFF';
+    const on=state==='ON';
+    const signature=JSON.stringify([pending,allowed,on,known,optimistic]);
     if(node.dataset.signature===signature)return;
     node.dataset.signature=signature;
-    const controls=el('div',{className:'actions direct-control'});
-    for(const payload of ['ON','OFF']){
-      const b=button(payload==='ON'?'Acionar':'Desacionar',()=>this.testRelay(m,c,payload));
-      b.setAttribute('aria-label',`${payload==='ON'?'Acionar':'Desacionar'} Entrada ${c.number}`);
-      b.disabled=!allowed;controls.append(b);
-    }
-    node.replaceChildren(controls);
+    const b=button(on?'Ligado':'Desligado',()=>this.testRelay(m,c,on?'OFF':'ON'),'command-toggle');
+    b.setAttribute('aria-label',`${on?'Desligar':'Ligar'} saída ${c.number}`);
+    b.setAttribute('aria-pressed',String(on));
+    b.title=optimistic?'Comando enviado; aguardando estado do módulo':known?'Estado informado pelo módulo':'Sem estado recebido. Clique para enviar ON.';
+    b.disabled=!allowed;
+    node.replaceChildren(b);
+  }
+  rememberCommand(m,number,payload) {
+    this.commandStates.set(`${m.module_uuid}:${m.serial}:${number}`,{payload,until:Date.now()+2000,version:m.channels[number-1]?.state_version??0});
+    const timer=setTimeout(()=>{this.feedbackTimers.delete(timer);this.updateStates();this.load();},2050);
+    this.feedbackTimers.add(timer);
   }
   async testRelay(m,c,payload) {
     if(this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.has(c.number))return;
-    this.localPending.add(c.number);this.updateStates();
+    this.localPending.add(c.number);this.rememberCommand(m,c.number,payload);this.updateStates();
     try{
       await this.api('command',{module_uuid:m.module_uuid,number:c.number,payload},true);
       this.error='';
-    }catch(e){this.error=e.message||String(e);}
+    }catch(e){this.commandStates.delete(`${m.module_uuid}:${m.serial}:${c.number}`);this.error=e.message||String(e);}
     finally{this.localPending.delete(c.number);await this.load();this.updateStates();}
   }
   async readRoute() {
@@ -255,14 +270,14 @@ export class DingtianPanel extends HTMLElement {
   selectedChannels(m) {return m.channels.filter(c=>c.enabled&&this.matchesArea(m,c));}
   filterBar(main) {
     const select=el('select',{'aria-label':'Filtrar por cômodo',onchange:e=>{this.areaFilter=e.target.value==='*'?null:e.target.value;this.groupMessage='';this.updateFilter();}},el('option',{value:'*'},'Todos os cômodos'),el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));select.value=this.areaFilter??'*';
-    main.append(el('section',{className:'filter-bar'},el('label',{},'Cômodo',select),el('span',{'data-summary':'',className:'count','aria-live':'polite'}),el('div',{className:'actions',title:'Aciona somente os canais marcados como Usar neste filtro.'},button('Ligar seleção',()=>this.operateGroup('ON'),'group-on'),button('Desligar seleção',()=>this.operateGroup('OFF'),'group-off'))),el('p',{'data-group-message':'',className:'helper',role:'status'},this.groupMessage));
+    main.append(el('section',{className:'filter-bar'},el('div',{className:'actions selection-actions',title:'Aciona somente as saídas marcadas como Usar neste filtro.'},button('Ligar seleção',()=>this.operateGroup('ON'),'group-on'),button('Desligar seleção',()=>this.operateGroup('OFF'),'group-off')),el('label',{},'Filtrar por cômodo',select)),el('p',{'data-group-message':'',className:'helper',role:'status'},this.groupMessage));
   }
   updateFilter() {
     if(!this.data)return;
     const mods=this.selectedModules(), channels=mods.flatMap(m=>this.selectedChannels(m));
     const summary=this.shadowRoot.querySelector('[data-summary]');
     if(summary)summary.textContent=`${channels.filter(c=>c.entity_type==='light').length} luzes · ${channels.length} entradas em uso`;
-    for(const row of this.shadowRoot.querySelectorAll('[data-module]')){const m=this.data.modules[row.dataset.module];row.hidden=!mods.includes(m)||(this.areaFilter!==null&&!m.channels.some(c=>this.matchesArea(m,c)));}
+    const actions=this.shadowRoot.querySelector('.selection-actions');if(actions)actions.hidden=this.areaFilter===null;
     const current=this.draft;
     for(const row of this.shadowRoot.querySelectorAll('[data-channel]'))row.hidden=current?!this.matchesArea(current,current.channels[Number(row.dataset.channel)-1]):false;
     const blocked=!channels.length||this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.size||this.data.error||!this.data.broker_connected;
@@ -270,11 +285,12 @@ export class DingtianPanel extends HTMLElement {
     const message=this.shadowRoot.querySelector('[data-group-message]');if(message){message.textContent=this.groupMessage;message.hidden=!this.groupMessage;}
   }
   async operateGroup(payload) {
-    if(this.groupBusy||this.dirty||this.saving||this.busy||this.localPending.size)return;
+    if(!this.active||this.areaFilter===null||this.groupBusy||this.dirty||this.saving||this.busy||this.localPending.size)return;
     const ids=this.selectedModules().filter(m=>this.selectedChannels(m).length).map(m=>m.module_uuid);
     if(!ids.length)return;
+    const baselines=new Map(ids.map(id=>[id,structuredClone(this.data.modules[id])]));
     this.groupBusy=true;this.groupMessage='Enviando comandos para a seleção…';this.updateStates();
-    try{const result=await this.api('operate_group',{module_ids:ids,area_id:this.areaFilter,payload},true);this.groupMessage=result.error||`${result.sent.length} comandos enviados.`;}
+    try{const result=await this.api('operate_group',{module_ids:ids,area_id:this.areaFilter,payload},true);this.groupMessage=result.error||`${result.sent.length} comandos enviados.`;for(const item of result.sent||[]){const mod=this.data.modules[item.module_uuid];if(mod)this.rememberCommand(baselines.get(item.module_uuid)||mod,item.number,payload);}}
     catch(e){this.groupMessage=e.message||String(e);}
     finally{this.groupBusy=false;await this.load();this.updateStates();}
   }
@@ -301,8 +317,8 @@ export class DingtianPanel extends HTMLElement {
     main.append(el('header', {}, el('div', {}, el('p', {className: 'eyebrow'}, 'SMART HOUSE / AUTOMAÇÃO CABEADA'), el('h1', {}, 'Dingtian Manager'), el('p', {className: 'muted'}, 'Seus módulos, organizados canal por canal.')), this.ingress ? null : button('☰ Menu', () => this.dispatchEvent(new CustomEvent('hass-toggle-menu', {bubbles: true, composed: true})))));
     if (!this.data) {main.append(el('p', {role:'status'}, this.error || 'Carregando cadastro…')); return;}
     const modules = Object.values(this.data.modules).filter(m => !m.deleted);
-    if(this.active)main.querySelector('header').append(button('← Módulos',()=>this.navigate(''),'back-modules'));
-    this.filterBar(main);
+    if(this.active)main.querySelector('header').append(button('← Voltar aos módulos',()=>this.navigate(''),'back-modules'));
+
     main.append(el('div', {className:'notice',role:'alert','data-message':'',hidden:!this.error}, this.error));
     main.append(el('div', {className:'notice error',role:'alert','data-sync':'',hidden:!this.data.error}, el('p', {}, this.data.error||''), button('Tentar sincronizar', () => this.perform('reconcile'))));
     if (!this.data.broker_connected) main.append(el('div',{className:'notice',role:'status'},'Broker MQTT desconectado. Não é possível enviar comandos ou remover entidades.'));
@@ -311,26 +327,32 @@ export class DingtianPanel extends HTMLElement {
     if (this.busy) for (const b of root.querySelectorAll('button,input,select')) b.disabled = true;
   }
   renderOverview(main, modules) {
-    main.append(el('div',{className:'bar'},el('div',{},el('h2',{},'Módulos'),el('span',{className:'count'},`${modules.length} cadastrado(s) · ${modules.reduce((a,m)=>a+m.used_count,0)} canais utilizados`)),button('+ Adicionar módulo',()=>this.addDialog(),'primary')));
+    main.querySelector('header').append(el('div',{className:'header-center'},el('h2',{},'Módulos'),el('span',{className:'count'},`${modules.length} cadastrados · ${modules.reduce((a,m)=>a+m.used_count,0)} canais utilizados`)),button('+ Adicionar módulo',()=>this.addDialog(),'primary'));
     if (!modules.length) main.append(el('section',{className:'empty'},el('div',{className:'symbol','aria-hidden':'true'},'▦'),el('h2',{},'Comece pelo primeiro módulo'),el('p',{className:'muted'},'Cadastre o serial e a capacidade. Depois, escolha os canais utilizados.'),button('Adicionar módulo',()=>this.addDialog(),'primary')));
     const grid=el('div',{className:'module-list'});
-    const search=el('input',{type:'search',placeholder:'Buscar módulo ou serial…','aria-label':'Buscar módulo',value:this.search,oninput:e=>{this.search=e.target.value.toLocaleLowerCase();this.updateFilter();}});
-    if(modules.length)main.append(el('div',{className:'overview-tools'},search));
     const icon=(path)=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',path);svg.append(p);return svg;};
     for (const m of modules){
       const edit=button('',()=>this.editModule(m),'icon-button');edit.title=`Editar módulo ${m.display_name}`;edit.setAttribute('aria-label',edit.title);edit.append(icon('M14 5l5 5M4 20l4-1L20 7a2 2 0 0 0-4-4L4 15v5Z'));
       const remove=button('',()=>{if(window.confirm(`Remover ${m.technical_id} e ${m.used_count} entidade(s)? Automações podem ser afetadas. Nenhum OFF será enviado.`))this.perform('delete',{module_uuid:m.module_uuid},true);},'icon-button danger');remove.title=`Remover ${m.display_name}`;remove.setAttribute('aria-label',remove.title);remove.append(icon('M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7'));
-      grid.append(el('article',{className:'module-row','data-module':m.module_uuid,'data-search':`${m.display_name} ${m.serial} ${m.technical_id}`.toLocaleLowerCase()},el('div',{className:'module-title'},el('h3',{},m.display_name),el('span',{className:`badge ${m.availability}`},statusLabel(m.availability))),el('div',{className:'meta-item serial'},el('small',{},'Serial'),el('strong',{},m.serial)),el('div',{className:'meta-item usage'},el('small',{},'Utilização'),el('strong',{},`${m.used_count} de ${m.channel_count}`)),el('div',{className:'actions'},button('Abrir entradas',()=>this.navigate(m.module_uuid),'primary'),edit,remove)));
+      grid.append(el('article',{className:'module-row','data-module':m.module_uuid,'data-search':`${m.display_name} ${m.serial} ${m.technical_id}`.toLocaleLowerCase()},el('div',{className:'module-title'},el('h3',{},m.display_name),el('span',{className:`badge ${m.availability}`},statusLabel(m.availability))),el('div',{className:'meta-item serial'},el('small',{},'Serial'),el('strong',{},m.serial)),el('div',{className:'meta-item usage'},el('small',{},'Utilização'),el('strong',{},`${m.used_count} de ${m.channel_count}`)),el('div',{className:'actions'},button('Abrir saídas',()=>this.navigate(m.module_uuid),'primary'),edit,remove)));
     }
 
     main.append(grid);this.updateFilter();
-    if(this.ingress)main.append(el('div',{className:'bar'},button('Exportar cadastro',()=>this.exportInventory()),button('Importar cadastro existente',()=>this.importInventory())));
-    main.append(el('details',{className:'notice'},el('summary',{},'Manutenção e remoção do gerenciador'),el('p',{},'Para desinstalar, prepare a limpeza online dos configs Discovery deste gerenciador. Salve antes um backup do Home Assistant. O cadastro será removido e as cargas permanecerão no estado físico atual.'),button('Preparar remoção permanente',()=>{if(window.confirm('Remover todas as entidades e módulos DESTE gerenciador? Outros dispositivos MQTT serão preservados. Este passo exige broker online.'))this.perform('prepare_remove',{},true);},'danger')));
+    main.append(el('div',{className:'bar'},button('Exportar para Excel',()=>this.exportInventory())));
   }
   async exportInventory() {
-    try{const data=await this.api('export');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=el('a',{href:url,download:'dingtian-cadastro.json'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-    catch(e){this.error=e.message;this.render();}
+    try{
+      const data=await this.api('list');
+      const rows=[['Nome do módulo','Saída do módulo','Nome','Cômodo','Tipo']];
+      const areas=new Map((data.areas||[]).map(a=>[a.area_id,a.name]));
+      for(const m of Object.values(data.modules||{}).filter(m=>!m.deleted)){
+        for(const c of m.channels)rows.push([m.display_name,`Saída ${c.number}`,c.display_name,areas.get(c.area_id||m.area_id)||'',c.entity_type==='light'?'Luz':'Switch']);
+      }
+      const url=URL.createObjectURL(new Blob([excelWorkbook(rows)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+      const a=el('a',{href:url,download:'dingtian-saidas.xlsx'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(e){this.error=e.message||String(e);this.render();}
   }
+
   importInventory() {
     const input=el('input',{type:'file',accept:'.json,application/json'});
     input.addEventListener('change',async()=>{
@@ -345,10 +367,12 @@ export class DingtianPanel extends HTMLElement {
   renderModule(main) {
     const m=this.draft;
     const current=this.data.modules[this.active];
-    main.append(el('div',{className:'bar module-header'},el('div',{},el('div',{className:'module-heading'},el('h2',{'data-title':''},m.display_name),el('span',{className:`badge ${current.availability}`},statusLabel(current.availability))),el('p',{className:'muted'},`Serial ${m.serial} · ${m.channel_count} canais · `,el('span',{'data-used':''},`${m.channels.filter(c=>c.enabled).length} utilizados`)))));
+    const center=el('div',{className:'header-center'},el('h2',{'data-title':''},m.display_name),el('p',{className:'count'},`Serial ${m.serial} · `,el('span',{'data-used':''},`${m.channels.filter(c=>c.enabled).length} de ${m.channel_count} saídas utilizadas`)));
+    main.querySelector('header').insertBefore(center,main.querySelector('.back-modules'));
+    this.filterBar(main);
     const retry=button('Revisar / tentar novamente',()=>this.retrySave());retry.dataset.retry='';retry.hidden=!this.saveError;
-    main.append(el('div',{className:'save-bar'},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveMessage),retry),el('p',{className:'helper'},'Edição salva automaticamente. Acionar e Desacionar enviam comandos.'));
-    const channels=el('section',{className:'channels','aria-label':`Canais de ${m.technical_id}`},el('div',{className:'channel-head','aria-hidden':'true'},...['Entrada','Comando','Nome','Cômodo','Tipo','Usar'].map(t=>el('span',{},t))));
+    main.append(el('div',{className:'save-bar'},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveMessage),retry),el('p',{className:'helper'},'Edição salva automaticamente.'));
+    const channels=el('section',{className:'channels','aria-label':`Canais de ${m.technical_id}`},el('div',{className:'channel-head','aria-hidden':'true'},...['Saída','Comando','Nome','Cômodo','Tipo','Usar'].map(t=>el('span',{},t))));
     for(const c of m.channels){
       const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);}});
       const type=el('select',{'aria-label':`Tipo R${c.number}`,onchange:e=>{c.entity_type=e.target.value;this.changed(true);}},el('option',{value:''},'Selecionar'),el('option',{value:'light'},'Luz'),el('option',{value:'switch'},'Switch'));type.value=c.entity_type;
@@ -358,9 +382,35 @@ export class DingtianPanel extends HTMLElement {
       area.value=c.area_id||'';
       const live=current?.channels[c.number-1]||c;
       const test=el('div',{className:'test-control','data-test':c.number});this.fillTest(test,current||m,live);
-      channels.append(el('article',{className:'channel','data-channel':c.number},el('div',{className:'position'},`Entrada ${c.number}`),test,el('label',{className:'channel-name'},el('span',{className:'sr'},'Nome do canal'),display),el('label',{className:'channel-area'},el('span',{className:'sr'},'Cômodo'),area),el('label',{className:'channel-type'},el('span',{className:'sr'},'Tipo'),type),el('label',{className:'inline channel-use'},use,el('span',{},'Usar'))));
+      channels.append(el('article',{className:'channel','data-channel':c.number},el('div',{className:'position'},`Saída ${c.number}`),test,el('label',{className:'channel-name'},el('span',{className:'sr'},'Nome do canal'),display),el('label',{className:'channel-area'},el('span',{className:'sr'},'Cômodo'),area),el('label',{className:'channel-type'},el('span',{className:'sr'},'Tipo'),type),el('label',{className:'inline channel-use'},use,el('span',{},'Usar'))));
     }
     main.append(channels);this.updateSaveStatus();
   }
 }
 if (!customElements.get('smart-house-dingtian-panel')) customElements.define('smart-house-dingtian-panel', DingtianPanel);
+
+// Small uncompressed OOXML workbook. Inline strings keep names literal, never formulas.
+export function excelWorkbook(rows) {
+  const xml=value=>String(value??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  const base='http'+':/'+'/schemas.openxmlformats.org/';
+  const files={
+    '[Content_Types].xml':`<Types xmlns="${base}package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`,
+    '_rels/.rels':`<Relationships xmlns="${base}package/2006/relationships"><Relationship Id="rId1" Type="${base}officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml':`<workbook xmlns="${base}spreadsheetml/2006/main" xmlns:r="${base}officeDocument/2006/relationships"><sheets><sheet name="Saídas" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels':`<Relationships xmlns="${base}package/2006/relationships"><Relationship Id="rId1" Type="${base}officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+    'xl/worksheets/sheet1.xml':`<worksheet xmlns="${base}spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="20" customWidth="1"/><col min="3" max="3" width="36" customWidth="1"/><col min="4" max="4" width="24" customWidth="1"/><col min="5" max="5" width="14" customWidth="1"/></cols><sheetData>${rows.map((row,i)=>`<row r="${i+1}">${row.map((v,j)=>`<c r="${String.fromCharCode(65+j)}${i+1}" t="inlineStr"><is><t xml:space="preserve">${xml(v)}</t></is></c>`).join('')}</row>`).join('')}</sheetData><autoFilter ref="A1:E${Math.max(1,rows.length)}"/></worksheet>`
+  };
+  const encoder=new TextEncoder(), parts=[],central=[];let offset=0;
+  const pack=(size,values)=>{const bytes=new Uint8Array(size),view=new DataView(bytes.buffer);for(const [at,value,width] of values)width===2?view.setUint16(at,value,true):view.setUint32(at,value,true);return bytes;};
+  for(const [name,text] of Object.entries(files)){
+    const n=encoder.encode(name),data=encoder.encode(text);let crc=0xffffffff;
+    for(const byte of data){crc^=byte;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}crc=(crc^0xffffffff)>>>0;
+    const local=pack(30,[[0,0x04034b50,4],[4,20,2],[12,33,2],[14,crc,4],[18,data.length,4],[22,data.length,4],[26,n.length,2]]);
+    parts.push(local,n,data);
+    central.push(pack(46,[[0,0x02014b50,4],[4,20,2],[6,20,2],[14,33,2],[16,crc,4],[20,data.length,4],[24,data.length,4],[28,n.length,2],[42,offset,4]]),n);
+    offset+=local.length+n.length+data.length;
+  }
+  const centralSize=central.reduce((n,p)=>n+p.length,0),count=Object.keys(files).length;
+  parts.push(...central,pack(22,[[0,0x06054b50,4],[8,count,2],[10,count,2],[12,centralSize,4],[16,offset,4]]));
+  const result=new Uint8Array(parts.reduce((n,p)=>n+p.length,0));let at=0;for(const part of parts){result.set(part,at);at+=part.length;}return result;
+}
