@@ -272,3 +272,31 @@ async def test_corrupt_storage_does_not_reset(tmp_path):
     with pytest.raises(ValueError):
         await Manager(port).load()
     assert path.read_text() == '{"broken":'
+
+
+async def test_physical_commands_never_wait_behind_other_operations(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    async with manager.lock:
+        with pytest.raises(ManagerError, match="sem fila"):
+            await manager.operate(mid, 7, "ON", True, 1)
+    assert client.published == []
+    started, release = asyncio.Event(), asyncio.Event()
+    publish = client.publish
+
+    async def slow_publish(*args):
+        started.set()
+        await release.wait()
+        await publish(*args)
+
+    client.publish = slow_publish
+    first = asyncio.create_task(manager.operate(mid, 7, "ON", True, 1))
+    await started.wait()
+    try:
+        with pytest.raises(ManagerError, match="sem fila"):
+            await manager.operate(mid, 7, "OFF", True, 1)
+    finally:
+        release.set()
+        await first
+        port.tests.close()
+    assert client.published == [("/Cabeado/relay00123/in/r7", "ON", 0, False)]

@@ -145,6 +145,10 @@ class Manager:
             self.port.changed()
 
     async def operate(self, mid, number, payload, confirmed, revision=None):
+        # Physical intent must be immediate: never wait behind a save, retry or another command.
+        # There is no await between this check and acquiring the uncontended asyncio lock.
+        if self.lock.locked():
+            raise ManagerError("Gerenciador ocupado; comando descartado, sem fila. Tente novamente depois.")
         async with self.lock:
             if type(revision) is not int or revision != self.state["revision"]:
                 raise ManagerError("Cadastro alterado. Recarregue antes de testar o relé.")
