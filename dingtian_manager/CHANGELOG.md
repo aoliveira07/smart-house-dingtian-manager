@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Toggle de relé envia Ligar/Desligar diretamente ao clicar, sem diálogo de confirmação do navegador.
+- Mantidos estado recebido do módulo, bloqueio durante pendência, disponibilidade e proteção contra comandos atrasados.
+- Atualização pela tela Aplicativos; sem alteração do formato de armazenamento ou dos IDs.
+
 ## 1.0.0
 
 - Primeira distribuição como aplicativo/add-on independente, amd64/aarch64, instalado pela loja do HA.

@@ -89,3 +89,24 @@ test('Ingress routes retain the application base URL',async()=>{
   assert.equal(window.location.hash,`#/modules/${m.module_uuid}`);assert.equal(node.shadowRoot.querySelectorAll('[data-test]').length,32);
   node.navigate('');assert.equal(window.location.hash,'#/');
 });
+
+test('toggle clicks send ON and OFF directly without confirmation or duplicate commands',async()=>{
+  const m=moduleData(1,8);m.availability='online';m.channels[0].state='OFF';
+  const {node,data,requests}=await panel([m]);node.navigate(m.module_uuid);
+  let confirmations=0;window.confirm=()=>{confirmations++;return false;};
+  const on=node.shadowRoot.querySelector('[data-test="1"] [role=switch]');
+  assert.equal(on.getAttribute('aria-checked'),'false');
+  on.click();on.click();await tick();
+  let commands=requests.filter(r=>r.action==='operate');
+  assert.equal(commands.length,1);assert.equal(commands[0].data.payload,'ON');
+  assert.equal(commands[0].data.number,1);assert.equal(commands[0].confirmed,true);
+  assert.equal(node.shadowRoot.querySelector('[data-test="1"] [role=switch]').getAttribute('aria-checked'),'false');
+  // Only equipment state changes the displayed toggle; the next click explicitly sends OFF.
+  data.modules[m.module_uuid].channels[0].state='ON';await node.load();
+  const off=node.shadowRoot.querySelector('[data-test="1"] [role=switch]');
+  assert.equal(off.getAttribute('aria-checked'),'true');off.click();await tick();
+  commands=requests.filter(r=>r.action==='operate');
+  assert.deepEqual(commands.map(r=>r.data.payload),['ON','OFF']);
+  assert.equal(confirmations,0);assert.equal(node.draft.channels[0].enabled,false);
+  assert.equal(requests.filter(r=>r.action==='save').length,0);
+});

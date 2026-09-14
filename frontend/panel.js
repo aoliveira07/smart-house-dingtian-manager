@@ -106,7 +106,6 @@ export class DingtianPanel extends HTMLElement {
   }
   async testRelay(m,c,payload) {
     if(this.localPending.has(c.number)||c.test?.status==='pending')return;
-    if(!window.confirm(`Enviar ${payload} somente ao relé R${c.number} de ${m.technical_id}? Comando real: observe a carga localmente em condições seguras. Cancelar o cadastro não desfaz este comando.`))return;
     this.localPending.add(c.number);this.updateStates();
     try{
       await this.api('operate',{module_uuid:m.module_uuid,number:c.number,payload},true);

@@ -1,8 +1,8 @@
-# Smart House Dingtian Manager — 1.0.0
+# Smart House Dingtian Manager — 1.0.1
 
 Aplicativo/add-on para **Home Assistant OS com Supervisor**, instalado pela tela **Aplicativos**. Organiza módulos Dingtian de **8, 16 ou 32 saídas**, com uma página por módulo e teste individual de relé antes de definir nome, tipo ou uso.
 
-**1.0.0 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
+**1.0.1 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
 
 ## Instalar como aplicativo
 
@@ -17,6 +17,10 @@ O Supervisor compila o aplicativo na instalação. São suportadas as arquitetur
 O aplicativo usa a conexão MQTT existente do Home Assistant pela API interna do Supervisor. Lê o prefixo Discovery efetivamente configurado no HA; não instala outro broker. O painel abre por Ingress, restrito a administradores. Credenciais nunca são enviadas ao navegador.
 
 [Instalação, atualização e migração](dingtian_manager/DOCS.md) · [Pacotes e releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases) · [Evidências dos testes](docs/TEST_RESULTS.md)
+
+## Atualização 1.0.1
+
+O toggle envia Ligar/Desligar diretamente ao clicar, sem a confirmação do navegador. Atualize pela página do aplicativo; cadastros e IDs são preservados.
 
 ## Cadastrar e identificar saídas
 
@@ -48,7 +52,7 @@ Inventário, UUIDs, sequência de módulos e diário Discovery ficam em `/data/i
 
 Atualize pela própria tela do aplicativo. A antiga integração continua no código para compatibilidade/migração, mas **não deve permanecer ativa simultaneamente com o aplicativo**. O backend bloqueia alterações nessa condição. A migração é explícita, importa o cadastro preservando IDs e aceita somente destino vazio; siga [DOCS.md](dingtian_manager/DOCS.md).
 
-O arquivo `smart-house-dingtian-manager-addon-1.0.0.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
+O arquivo `smart-house-dingtian-manager-addon-1.0.1.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
 
 ## Desenvolvimento
 

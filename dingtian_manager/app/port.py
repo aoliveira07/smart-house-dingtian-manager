@@ -180,7 +180,7 @@ class RemotePort:
     def decorate(self, state):
         self.refresh(state)
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.0.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.0.1"
         )
         if self.error or self.legacy_active:
             state["error"] = (

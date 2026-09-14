@@ -1,4 +1,4 @@
-# Instalação e uso — aplicativo 1.0.0
+# Instalação e uso — aplicativo 1.0.1
 
 ## Requisitos
 
@@ -9,17 +9,17 @@ Home Assistant OS/Supervisor, Core 2026.9.2+, CPU amd64 ou aarch64, administrado
 1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
 2. Em **⋮ → Repositórios**, adicione `https://github.com/aoliveira07/smart-house-dingtian-manager`.
 3. Atualize a loja e abra **Smart House Dingtian Manager**.
-4. Instale a **1.0.0**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
+4. Instale a **1.0.1**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
 
 Não instale o ZIP de integração pelo HACS para obter o aplicativo. Não é necessário reiniciar o Core para instalar este aplicativo. Seu inventário começa vazio.
 
-Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.0.0.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
+Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.0.1.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
 
 ## Primeiro módulo e teste
 
 Cadastre serial e capacidade. Esses campos ficam fixos depois de salvar para impedir comandos baseados em edições ainda não confirmadas. Use um nome provisório se necessário. Abra o módulo e espere a disponibilidade `online`.
 
-Cada canal possui **Testar relé — comando real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. A ação é confirmada individualmente e exige observação local em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
+Cada canal possui **Testar relé — comando real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. O clique envia o comando diretamente, sem janela de confirmação do navegador. Observe a carga localmente em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
 
 Depois de identificar a carga, preencha nome e tipo, marque **Usar canal** e salve. Canais não utilizados podem ficar com nome/tipo vazios. Testar não cria entidades; salvar não envia comandos. Cancelar descarta edições de cadastro, mas mantém o estado físico resultante dos comandos. Canais não utilizados que reportam ON permanecem visíveis, com aviso ao sair.
 
@@ -57,4 +57,4 @@ Para desinstalar definitivamente e limpar as entidades deste gerenciador, use **
 - **Resultado físico não confirmado:** observe a carga antes de decidir o próximo comando; não suponha OFF.
 - **Cadastro alterado:** cancele/recarregue o formulário para obter a revisão salva por outra sessão.
 
-A versão 1.0.0 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
+A versão 1.0.1 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.

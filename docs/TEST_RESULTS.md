@@ -1,3 +1,11 @@
+# Atualização 1.0.1
+
+Regressão do toggle validada em teste de DOM: clique com estado OFF envia ON; após retorno ON, clique envia OFF; zero chamadas de confirmação, nenhum comando duplicado e estado sem alteração otimista. **9 testes de frontend e 38 de núcleo/aplicativo passaram localmente**. A publicação exige também os 5 testes no HA e os builds/smoke tests amd64/arm64; a execução da versão está vinculada nas notas da release. Total da suíte: **52 testes**.
+
+O backend, armazenamento e IDs não tiveram alteração funcional nesta atualização. Nenhum teste acionou a instalação residencial.
+
+## Referência da versão anterior
+
 # Evidências — aplicativo 1.0.0
 
 Execução em 14/09/2026. [CI completo aprovado de referência](https://github.com/aoliveira07/smart-house-dingtian-manager/actions/runs/34860152154), commit `12845a53564159192febd33145bd15f0ec652178`. A release executa novamente todos os jobs no commit publicado; o link fica nas notas da tag.

@@ -1,13 +1,17 @@
-# Smart House Dingtian Manager 1.0.0 — aplicativo/add-on
+# Smart House Dingtian Manager 1.0.1
 
-Esta versão reúne a entrega principal e o Adendo 01 na distribuição por **Aplicativos** do Home Assistant.
+O toggle de cada canal agora envia Ligar/Desligar diretamente ao clicar, sem a janela de confirmação do navegador.
 
-Adicione `https://github.com/aoliveira07/smart-house-dingtian-manager` em **Instalar aplicativo → ⋮ → Repositórios**, instale **Smart House Dingtian Manager**, inicie e abra a interface Web. Requer Core 2026.9.2+, Supervisor e MQTT configurado. Suporta amd64/aarch64.
+Permanecem a indicação do estado recebido do módulo, a espera pelo retorno, o bloqueio contra cliques repetidos e a validação de disponibilidade. Com estado desconhecido, Ligar e Desligar continuam explícitos. Salvar o cadastro não envia comandos.
 
-Inclui teste explícito em cada linha de canal antes do cadastro operacional, sem criar entidade provisória, sem enviar comandos ao salvar e com confirmação pelo estado recebido. Cadastro persistente em `/data`; exportação/importação preservando identidades. Não depende de HACS.
+## Atualizar
 
-**Pacote principal:** `smart-house-dingtian-manager-addon-1.0.0.zip` (alternativa para instalação local em `/addons`). Os outros dois ZIPs são da integração de compatibilidade, não necessários para instalar o aplicativo.
+Em **Configurações → Aplicativos → Smart House Dingtian Manager**, clique em **Atualizar**. Se ainda não aparecer, atualize a loja/verifique atualizações e reabra a página do aplicativo. Depois, reabra a interface Web para carregar o painel novo.
 
-Testes automatizados de núcleo, interface, backend e APIs reais do HA com MQTT simulado; builds e inicialização em contêineres amd64/arm64. Detalhes e limitações em `docs/TEST_RESULTS.md` e na CI abaixo.
+O repositório continua `https://github.com/aoliveira07/smart-house-dingtian-manager`. Inventário e IDs são preservados; não é necessário reinstalar ou importar o cadastro.
 
-**Homologação física pendente.** Nenhum acesso à casa ou acionamento real foi feito nesta implementação. A release é marcada como pré-release até a homologação, mantendo o número 1.0.0 solicitado. A tag beta anterior permanece no histórico.
+Pacote principal: `smart-house-dingtian-manager-addon-1.0.1.zip`, também disponível para instalação local em `/addons`. Os ZIPs de integração são apenas compatibilidade.
+
+Testes de regressão verificam o clique real no toggle para ON e OFF sem chamar confirmação, ausência de duplicação e preservação do estado até o retorno do módulo. A CI completa, incluindo contêineres amd64/arm64, precisa passar antes da publicação.
+
+Nenhum comando foi enviado à instalação residencial durante o desenvolvimento. Homologação física pendente.
