@@ -14,7 +14,7 @@ def docker(*args):
 
 metadata = json.loads(docker("image", "inspect", "dingtian-test"))[0]
 labels = metadata["Config"]["Labels"]
-assert labels["io.hass.type"] == "app" and labels["io.hass.version"] == "1.1.2"
+assert labels["io.hass.type"] == "app" and labels["io.hass.version"] == "1.2.0"
 assert labels["io.hass.arch"] == {"amd64": "amd64", "arm64": "aarch64"}[metadata["Architecture"]]
 
 container = docker(

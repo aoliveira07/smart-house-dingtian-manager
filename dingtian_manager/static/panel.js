@@ -9,6 +9,7 @@ const css = `
  main{padding-bottom:32px}header p{margin-bottom:0}nav{padding:16px 0}.bar{margin:20px 0}.grid{display:block}.module-list{display:grid;gap:8px}.module-row{display:grid;grid-template-columns:minmax(160px,1.5fr) minmax(100px,1fr) 100px auto;gap:20px;align-items:center;background:var(--card-background-color,#fff);border:1px solid var(--divider-color,#dbe3e6);border-radius:10px;padding:14px 16px}.module-row h3{font-size:16px;margin:0 0 5px;overflow-wrap:anywhere}.module-row .meta-item{min-width:0;overflow-wrap:anywhere}.meta-item small{display:block;color:var(--secondary-text-color,#60747d)}.module-row .actions{flex-wrap:nowrap;gap:6px}.icon-button{padding:9px;width:44px;display:inline-flex;align-items:center;justify-content:center}.icon-button svg{width:19px;height:19px}.badge{padding:3px 9px}.badge.online{background:var(--secondary-background-color,#e8f5ee)}.badge.online::before{content:'●';margin-right:5px}.overview-tools{display:flex;gap:12px;margin-bottom:14px}.overview-tools input{max-width:340px}.module-header{gap:20px}.module-header>div{min-width:0}.module-header h2{overflow-wrap:anywhere}.module-header label{width:min(300px,100%)}.module-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.module-header p{margin:4px 0 0}.save-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0}.save-status{font-size:13px;color:var(--success-color,#137958)}.save-status[data-pending=true]{color:var(--secondary-text-color,#60747d)}.save-status[data-error=true]{color:var(--error-color,#b32435)}.helper{font-size:13px;margin:8px 0 14px;color:var(--secondary-text-color,#60747d)}.channels{display:block;margin-top:12px;border:1px solid var(--divider-color,#dbe3e6);border-radius:10px;overflow:hidden;background:var(--card-background-color,#fff)}.channel,.channel-head{display:grid;grid-template-columns:36px 140px minmax(140px,1.4fr) minmax(130px,1fr) 110px 60px;gap:14px;align-items:center;padding:8px 14px;border:0;border-radius:0}.channel+.channel{border-top:1px solid var(--divider-color,#dbe3e6)}.channel-head{background:var(--secondary-background-color,#eaf0f2);font-size:12px;font-weight:650;min-height:40px}.channel .position{font-size:14px}.channel label{gap:0;min-width:0}.channel input,.channel select{padding:8px;font-size:15px}.channel .channel-name,.channel .channel-type,.channel .channel-use,.channel .test-control{grid-column:auto}.channel .channel-use{min-height:44px;justify-content:center}.channel-use span{display:none}.relay-switch{padding:6px 9px;border-color:transparent;background:transparent;gap:7px;font-size:12px}.test-control .actions{gap:4px;flex-wrap:nowrap}.test-control .actions button:not(.relay-switch){font-size:12px;padding:6px 8px}.test-control small{display:block;font-size:11px;line-height:1.3;margin:3px 0;overflow-wrap:anywhere}.test-control .state{display:none}.module-details{margin-top:18px;font-size:12px;color:var(--secondary-text-color,#60747d)}.module-details .technical-row{padding:8px 0;border-bottom:1px solid var(--divider-color,#dbe3e6)}.module-picker{display:none}.conflict-list{max-height:45vh;overflow:auto;font-size:13px}.conflict-list p{overflow-wrap:anywhere;padding:8px 0;border-bottom:1px solid var(--divider-color,#dbe3e6)}[hidden]{display:none!important}
  @media(max-width:900px){.module-row{grid-template-columns:minmax(130px,1fr) 100px auto;gap:12px}.module-row .usage{grid-column:2;grid-row:1}.module-row .serial{grid-column:1;grid-row:2}.module-row .actions{grid-column:3;grid-row:1/3}.channel,.channel-head{grid-template-columns:28px 130px minmax(110px,1fr) minmax(110px,1fr) 100px 46px;gap:10px}}
  @media(max-width:760px){main{padding:18px 12px 28px}h1{font-size:24px}.eyebrow{font-size:9px;letter-spacing:1.4px;margin-bottom:6px}header p.muted{display:none}nav{display:none}.module-picker{display:flex;gap:8px;align-items:center;margin-top:16px}.module-picker select{min-width:0;flex:1}.bar{margin:18px 0 12px;gap:10px}.bar h2{font-size:19px}.bar>.primary{font-size:13px;padding:8px 10px}.module-row{grid-template-columns:minmax(0,1fr) auto;padding:12px;gap:8px 12px}.module-row .module-title{grid-column:1;grid-row:1}.module-row .usage{grid-column:2;grid-row:1;text-align:right}.module-row .serial{grid-column:1/-1;grid-row:2;max-width:calc(100% - 184px)}.module-row .actions{grid-column:1/-1;grid-row:2;justify-content:flex-end}.module-row .actions .primary{font-size:12px;padding:8px}.module-row h3{font-size:15px}.module-row .actions{gap:4px}.module-row .icon-button{width:44px}.module-row .meta-item{font-size:13px}.module-row .serial small{display:none}.module-row .serial strong::before{content:'Serial ';font-weight:400}.module-header{display:block}.module-header label{margin-top:12px;width:100%}.module-header p{font-size:12px}.helper{font-size:12px}.save-bar{position:sticky;top:0;z-index:2;background:var(--primary-background-color,#f4f7f8);padding:8px 0;margin:0}.save-bar button{font-size:12px;padding:6px 10px}.channels{margin-top:6px}.channel-head{display:none}.channel{grid-template-columns:32px minmax(0,1fr) minmax(100px,1fr);gap:6px 10px;padding:10px 12px}.channel .position{grid-column:1;grid-row:1}.channel .test-control{grid-column:2;grid-row:1;justify-self:start;max-width:100%}.channel .channel-name{grid-column:1/-1;grid-row:2}.channel .channel-area{grid-column:1/3;grid-row:3}.channel .channel-type{grid-column:3;grid-row:3}.channel .channel-use{grid-column:3;grid-row:1;justify-content:flex-end;font-size:12px;gap:8px}.channel-use span{display:inline}.channel input,.channel select{font-size:16px}.test-control small{max-width:240px}.test-control .actions{justify-content:flex-end}.module-details{margin-top:12px}dialog{padding:20px}}
+ main{padding-top:14px}h1{font-size:23px;margin-bottom:0}.eyebrow,header p.muted{display:none}.bar{margin:12px 0}.back-modules{margin-top:0;padding:6px 12px}.filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0;padding:10px 12px;background:var(--card-background-color,#fff);border:1px solid var(--divider-color,#dbe3e6);border-radius:10px}.filter-bar label{min-width:180px;flex:1;max-width:260px}.filter-bar .count{flex:1;min-width:200px}.filter-bar .actions button{font-size:13px;padding:8px 12px}.relay-switch{width:44px;height:44px;border-radius:50%;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--divider-color,#bdcdd2);background:var(--secondary-background-color,#e7ecee);font-size:24px;color:var(--secondary-text-color,#60747d)}.relay-switch[aria-checked=true],.relay-switch:not([role])[data-power=ON]{background:var(--primary-color,#087f8c);color:white}.relay-switch:not([role])[data-power=OFF]{background:var(--secondary-background-color,#e7ecee)}.module-header{margin:10px 0}.module-header h2{font-size:19px}.save-bar{margin:4px 0}.helper{margin:4px 0 8px}@media(max-width:760px){.filter-bar{gap:8px;padding:8px}.filter-bar label{max-width:none;min-width:100%;}.filter-bar .actions{width:100%}.filter-bar .actions button{flex:1}h1{font-size:22px}}
 `;
 
 function el(tag, attrs = {}, ...children) {
@@ -32,7 +33,7 @@ export class DingtianPanel extends HTMLElement {
     this.editorId=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
     try {this.editorId=window.sessionStorage.getItem(`${DOMAIN}:editor`) || this.editorId;window.sessionStorage.setItem(`${DOMAIN}:editor`,this.editorId);}catch{}
     this.onPop = () => this.readRoute();
-    this.saveMessage = 'Salvo'; this.saveError = ''; this.saving = null;
+    this.saveMessage = 'Salvo'; this.saveError = ''; this.saving = null; this.areaFilter=null; this.search=''; this.groupBusy=false; this.groupMessage='';
     this.onHidden = () => {if(document.visibilityState==='hidden' && this.dirty) this.save();};
     this.onUnload = e => {if (this.dirty || this.testWarning()) {e.preventDefault(); e.returnValue = '';}};
   }
@@ -77,7 +78,7 @@ export class DingtianPanel extends HTMLElement {
     finally {this.loading=false;}
   }
   draftKey() {return `${DOMAIN}:draft:${this.data?.manager_uuid || 'preview'}:${this.active}:${this.editorId}`;}
-  config(m) {return {module_uuid:m.module_uuid,display_name:m.display_name,channels:m.channels.map(c=>({number:c.number,display_name:c.display_name,entity_type:c.entity_type,enabled:c.enabled,area_id:c.area_id??null}))};}
+  config(m) {return {module_uuid:m.module_uuid,channels:m.channels.map(c=>({number:c.number,display_name:c.display_name,entity_type:c.entity_type,enabled:c.enabled,area_id:c.area_id??null}))};}
   resetDraft() {
     clearTimeout(this.saveTimer);
     const m = this.data?.modules[this.active];
@@ -88,7 +89,7 @@ export class DingtianPanel extends HTMLElement {
     try {
       const saved=JSON.parse(window.localStorage.getItem(this.draftKey()) || 'null');
       if(saved?.draft?.module_uuid===this.active && saved.draft.channels?.length===m.channels.length){
-        this.draft.display_name=saved.draft.display_name;
+        // Module identity is edited only from the overview dialog.
         for(const c of saved.draft.channels) Object.assign(this.draft.channels[c.number-1],c);
         this.base=saved.base;this.editRevision=saved.revision;
         this.dirty=true;this.saveMessage='Rascunho recuperado · salvando…';
@@ -116,6 +117,7 @@ export class DingtianPanel extends HTMLElement {
   updateStates() {
     const message=this.shadowRoot.querySelector('[data-message]');if(message){message.hidden=!this.error;message.textContent=this.error;}
     const sync=this.shadowRoot.querySelector('[data-sync]');if(sync){sync.hidden=!this.data?.error;sync.querySelector('p').textContent=this.data?.error||'';}
+    this.updateFilter();
     const current = this.data?.modules[this.active];
     if (!current) {
       for(const row of this.shadowRoot.querySelectorAll('[data-module]')){
@@ -133,16 +135,16 @@ export class DingtianPanel extends HTMLElement {
   }
   fillTest(node,m,c) {
     const pending=this.localPending.has(c.number)||c.test?.status==='pending';
-    const allowed=this.data.broker_connected&&m.availability==='online'&&!this.data.error&&!this.busy&&!this.saving&&!this.dirty&&!pending&&this.editRevision===this.data.revision;
+    const allowed=this.data.broker_connected&&m.availability==='online'&&!this.data.error&&!this.busy&&!this.groupBusy&&!this.saving&&!this.dirty&&!pending&&this.editRevision===this.data.revision;
     const signature=JSON.stringify([c.state,c.test,pending,allowed,c.enabled]);
     if(node.dataset.signature===signature)return;
     node.dataset.signature=signature;
     const controls=el('div',{className:'actions'});
     const payloads=c.state==='ON'?['OFF']:c.state==='OFF'?['ON']:['ON','OFF'];
     for(const payload of payloads){
-      const b=button(payload==='ON'?'Ligar':'Desligar',()=>this.testRelay(m,c,payload));
+      const b=button('⏻',()=>this.testRelay(m,c,payload),'relay-switch');b.title=`${payload==='ON'?'Ligar':'Desligar'} R${c.number}`;b.dataset.power=payload;
       b.setAttribute('aria-label',`${payload==='ON'?'Ligar':'Desligar'} R${c.number} — comando real`);
-      if(c.state!=='unknown'){b.setAttribute('role','switch');b.setAttribute('aria-checked',String(c.state==='ON'));b.classList.add('relay-switch');b.prepend(el('span',{className:'switch-track','aria-hidden':'true'},el('span',{className:'switch-knob'})));}
+      if(c.state!=='unknown'){b.setAttribute('role','switch');b.setAttribute('aria-checked',String(c.state==='ON'));}
       b.disabled=!allowed; controls.append(b);
     }
     node.replaceChildren(controls);
@@ -153,7 +155,7 @@ export class DingtianPanel extends HTMLElement {
     node.title=!allowed&&!pending?(this.dirty||this.saving?'Aguardando salvar configuração.':'Teste requer módulo online e conexão.'):'';
   }
   async testRelay(m,c,payload) {
-    if(this.dirty||this.saving||this.busy||this.localPending.has(c.number)||c.test?.status==='pending')return;
+    if(this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.has(c.number)||c.test?.status==='pending')return;
     this.localPending.add(c.number);this.updateStates();
     try{
       await this.api('operate',{module_uuid:m.module_uuid,number:c.number,payload},true);
@@ -238,10 +240,52 @@ export class DingtianPanel extends HTMLElement {
     local.channels.forEach((c,i)=>compare(this.base?.channels[i],c,merged.channels[i],`R${c.number}`));
     const dialog=el('dialog',{},el('h2',{},'Revisar alterações'),el('p',{},'O cadastro mudou. Confira sua edição antes de aplicá-la sobre a versão atual.'),el('div',{className:'conflict-list'},...changes.map(t=>el('p',{},t))));
     dialog.append(el('div',{className:'actions'},button('Voltar à edição',()=>dialog.close()),button('Aplicar minhas alterações',async()=>{
-      dialog.close();if(this.data.revision!==reviewedRevision){await this.retrySave();return;}this.draft.display_name=merged.display_name;merged.channels.forEach((c,i)=>Object.assign(this.draft.channels[i],c));
+      dialog.close();if(this.data.revision!==reviewedRevision){await this.retrySave();return;}merged.channels.forEach((c,i)=>Object.assign(this.draft.channels[i],c));
       this.editRevision=this.data.revision;this.base=this.config(latest);this.rememberDraft();this.render();await this.save();
     },'primary')));
     dialog.addEventListener('close',()=>dialog.remove());this.shadowRoot.append(dialog);dialog.showModal();
+  }
+  editModule(m) {
+    const dialog=el('dialog'),form=el('form');
+    const name=el('input',{value:m.display_name,required:true,maxLength:120,'aria-label':'Nome do módulo'});
+    const serial=el('input',{value:m.serial,required:true,pattern:'[0-9]{1,64}',maxLength:64,inputMode:'numeric','aria-label':'Número de série'});
+    const error=el('p',{role:'alert'});
+    const revision=this.data.revision;
+    const submit=el('button',{type:'submit',className:'primary'},'Salvar módulo');
+    form.append(el('h2',{},'Editar módulo'),el('label',{},'Nome do módulo',name),el('label',{},'Número de série',serial),el('p',{className:'helper'},'Ao substituir o módulo, informe o novo serial. Os canais, nomes e cômodos serão mantidos.'),error,el('div',{className:'actions'},button('Cancelar',()=>dialog.close()),submit));
+    form.addEventListener('submit',async e=>{e.preventDefault();submit.disabled=true;
+      try{const result=await this.hass.callWS({type:`${DOMAIN}/request`,action:'edit_module',revision,confirmed:true,data:{module_uuid:m.module_uuid,display_name:name.value,serial:serial.value}});this.data=result;dialog.close();this.resetDraft();this.render();}
+      catch(e){error.textContent=e.message||String(e);submit.disabled=false;}
+    });
+    dialog.append(form);dialog.addEventListener('close',()=>dialog.remove());this.shadowRoot.append(dialog);dialog.showModal();name.focus();
+  }
+  matchesArea(m,c) {return this.areaFilter===null || (c.area_id || m.area_id || '')===this.areaFilter;}
+  selectedModules() {return Object.values(this.data?.modules||{}).filter(m=>!m.deleted && (!this.active || m.module_uuid===this.active) && (this.active || `${m.display_name} ${m.serial} ${m.technical_id}`.toLocaleLowerCase().includes(this.search)));}
+  selectedChannels(m) {return m.channels.filter(c=>c.enabled&&this.matchesArea(m,c));}
+  filterBar(main) {
+    const select=el('select',{'aria-label':'Filtrar por cômodo',onchange:e=>{this.areaFilter=e.target.value==='*'?null:e.target.value;this.groupMessage='';this.updateFilter();}},el('option',{value:'*'},'Todos os cômodos'),el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));select.value=this.areaFilter??'*';
+    main.append(el('section',{className:'filter-bar'},el('label',{},'Cômodo',select),el('span',{'data-summary':'',className:'count','aria-live':'polite'}),el('div',{className:'actions',title:'Aciona somente os canais marcados como Usar neste filtro.'},button('Ligar seleção',()=>this.operateGroup('ON'),'group-on'),button('Desligar seleção',()=>this.operateGroup('OFF'),'group-off'))),el('p',{'data-group-message':'',className:'helper',role:'status'},this.groupMessage));
+  }
+  updateFilter() {
+    if(!this.data)return;
+    const mods=this.selectedModules(), channels=mods.flatMap(m=>this.selectedChannels(m)), visible=mods.flatMap(m=>m.channels.filter(c=>this.matchesArea(m,c)));
+    const summary=this.shadowRoot.querySelector('[data-summary]');
+    if(summary)summary.textContent=`${channels.filter(c=>c.entity_type==='light').length} luzes · ${channels.length} relés em uso · ${visible.filter(c=>c.state==='ON').length} acionados · ${visible.filter(c=>c.state==='unknown').length} sem estado`;
+    for(const row of this.shadowRoot.querySelectorAll('[data-module]')){const m=this.data.modules[row.dataset.module];row.hidden=!mods.includes(m)||(this.areaFilter!==null&&!m.channels.some(c=>this.matchesArea(m,c)));}
+    const current=this.draft;
+    for(const row of this.shadowRoot.querySelectorAll('[data-channel]'))row.hidden=current?!this.matchesArea(current,current.channels[Number(row.dataset.channel)-1]):false;
+    const blocked=!channels.length||this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.size||this.data.error||!this.data.broker_connected||mods.some(m=>this.selectedChannels(m).length&&(m.availability!=='online'||this.selectedChannels(m).some(c=>c.test?.status==='pending')));
+    for(const b of this.shadowRoot.querySelectorAll('.group-on,.group-off'))b.disabled=Boolean(blocked);
+    const message=this.shadowRoot.querySelector('[data-group-message]');if(message){message.textContent=this.groupMessage;message.hidden=!this.groupMessage;}
+  }
+  async operateGroup(payload) {
+    if(this.groupBusy||this.dirty||this.saving||this.busy||this.localPending.size)return;
+    const ids=this.selectedModules().filter(m=>this.selectedChannels(m).length).map(m=>m.module_uuid);
+    if(!ids.length)return;
+    this.groupBusy=true;this.groupMessage='Enviando comandos para a seleção…';this.updateStates();
+    try{const result=await this.api('operate_group',{module_ids:ids,area_id:this.areaFilter,payload},true);this.groupMessage=result.error||`${result.sent.length} comandos enviados. Aguardando o estado dos relés.`;}
+    catch(e){this.groupMessage=e.message||String(e);}
+    finally{this.groupBusy=false;await this.load();this.updateStates();}
   }
   addDialog() {
     const form = el('form'); const dialog = el('dialog', {}, form);
@@ -266,13 +310,8 @@ export class DingtianPanel extends HTMLElement {
     main.append(el('header', {}, el('div', {}, el('p', {className: 'eyebrow'}, 'SMART HOUSE / AUTOMAÇÃO CABEADA'), el('h1', {}, 'Dingtian Manager'), el('p', {className: 'muted'}, 'Seus módulos, organizados canal por canal.')), this.ingress ? null : button('☰ Menu', () => this.dispatchEvent(new CustomEvent('hass-toggle-menu', {bubbles: true, composed: true})))));
     if (!this.data) {main.append(el('p', {role:'status'}, this.error || 'Carregando cadastro…')); return;}
     const modules = Object.values(this.data.modules).filter(m => !m.deleted);
-    const nav = el('nav', {'aria-label': 'Módulos'});
-    for (const [id, label] of [['','Módulos'], ...modules.map(m => [m.module_uuid,m.technical_id])]) {
-      const b = button(label, () => this.navigate(id)); if (id === this.active) b.setAttribute('aria-current', 'page'); nav.append(b);
-    }
-    main.append(nav);
-    const picker=el('select',{'aria-label':'Selecionar módulo',onchange:async e=>{await this.navigate(e.target.value);e.target.value=this.active;}},el('option',{value:''},'Todos os módulos'),...modules.map(m=>el('option',{value:m.module_uuid},m.display_name)));picker.value=this.active;
-    main.append(el('div',{className:'module-picker'},this.active?button('←',()=>this.navigate('')):null,picker));
+    if(this.active)main.querySelector('header').append(button('← Módulos',()=>this.navigate(''),'back-modules'));
+    this.filterBar(main);
     main.append(el('div', {className:'notice',role:'alert','data-message':'',hidden:!this.error}, this.error));
     main.append(el('div', {className:'notice error',role:'alert','data-sync':'',hidden:!this.data.error}, el('p', {}, this.data.error||''), button('Tentar sincronizar', () => this.perform('reconcile'))));
     if (!this.data.broker_connected) main.append(el('div',{className:'notice',role:'status'},'Broker MQTT desconectado. Não é possível enviar comandos ou remover entidades.'));
@@ -284,16 +323,16 @@ export class DingtianPanel extends HTMLElement {
     main.append(el('div',{className:'bar'},el('div',{},el('h2',{},'Módulos'),el('span',{className:'count'},`${modules.length} cadastrado(s) · ${modules.reduce((a,m)=>a+m.used_count,0)} canais utilizados`)),button('+ Adicionar módulo',()=>this.addDialog(),'primary')));
     if (!modules.length) main.append(el('section',{className:'empty'},el('div',{className:'symbol','aria-hidden':'true'},'▦'),el('h2',{},'Comece pelo primeiro módulo'),el('p',{className:'muted'},'Cadastre o serial e a capacidade. Depois, escolha os canais utilizados.'),button('Adicionar módulo',()=>this.addDialog(),'primary')));
     const grid=el('div',{className:'module-list'});
-    const search=el('input',{type:'search',placeholder:'Buscar módulo ou serial…','aria-label':'Buscar módulo',oninput:e=>{const q=e.target.value.toLocaleLowerCase();for(const row of grid.children)row.hidden=!row.dataset.search.includes(q);}});
+    const search=el('input',{type:'search',placeholder:'Buscar módulo ou serial…','aria-label':'Buscar módulo',value:this.search,oninput:e=>{this.search=e.target.value.toLocaleLowerCase();this.updateFilter();}});
     if(modules.length)main.append(el('div',{className:'overview-tools'},search));
     const icon=(path)=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',path);svg.append(p);return svg;};
     for (const m of modules){
-      const edit=button('',async()=>{await this.navigate(m.module_uuid);this.shadowRoot.querySelector('[data-module-name]')?.focus();},'icon-button');edit.title=`Editar nome de ${m.display_name}`;edit.setAttribute('aria-label',edit.title);edit.append(icon('M14 5l5 5M4 20l4-1L20 7a2 2 0 0 0-4-4L4 15v5Z'));
+      const edit=button('',()=>this.editModule(m),'icon-button');edit.title=`Editar módulo ${m.display_name}`;edit.setAttribute('aria-label',edit.title);edit.append(icon('M14 5l5 5M4 20l4-1L20 7a2 2 0 0 0-4-4L4 15v5Z'));
       const remove=button('',()=>{if(window.confirm(`Remover ${m.technical_id} e ${m.used_count} entidade(s)? Automações podem ser afetadas. Nenhum OFF será enviado.`))this.perform('delete',{module_uuid:m.module_uuid},true);},'icon-button danger');remove.title=`Remover ${m.display_name}`;remove.setAttribute('aria-label',remove.title);remove.append(icon('M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7'));
       grid.append(el('article',{className:'module-row','data-module':m.module_uuid,'data-search':`${m.display_name} ${m.serial} ${m.technical_id}`.toLocaleLowerCase()},el('div',{className:'module-title'},el('h3',{},m.display_name),el('span',{className:`badge ${m.availability}`},statusLabel(m.availability))),el('div',{className:'meta-item serial'},el('small',{},'Serial'),el('strong',{},m.serial)),el('div',{className:'meta-item usage'},el('small',{},'Utilização'),el('strong',{},`${m.used_count} de ${m.channel_count}`)),el('div',{className:'actions'},button('Abrir canais',()=>this.navigate(m.module_uuid),'primary'),edit,remove)));
     }
 
-    main.append(grid);
+    main.append(grid);this.updateFilter();
     if(this.ingress)main.append(el('div',{className:'bar'},button('Exportar cadastro',()=>this.exportInventory()),button('Importar cadastro existente',()=>this.importInventory())));
     main.append(el('details',{className:'notice'},el('summary',{},'Manutenção e remoção do gerenciador'),el('p',{},'Para desinstalar, prepare a limpeza online dos configs Discovery deste gerenciador. Salve antes um backup do Home Assistant. O cadastro será removido e as cargas permanecerão no estado físico atual.'),button('Preparar remoção permanente',()=>{if(window.confirm('Remover todas as entidades e módulos DESTE gerenciador? Outros dispositivos MQTT serão preservados. Este passo exige broker online.'))this.perform('prepare_remove',{},true);},'danger')));
   }
@@ -314,13 +353,11 @@ export class DingtianPanel extends HTMLElement {
   }
   renderModule(main) {
     const m=this.draft;
-    const name=el('input',{value:m.display_name,maxLength:120,'data-module-name':'',oninput:e=>{m.display_name=e.target.value;this.changed();},onblur:()=>this.save()});
     const current=this.data.modules[this.active];
-    main.append(el('div',{className:'bar module-header'},el('div',{},el('div',{className:'module-heading'},el('h2',{'data-title':''},m.display_name),el('span',{className:`badge ${current.availability}`},statusLabel(current.availability))),el('p',{className:'muted'},`Serial ${m.serial} · ${m.channel_count} canais · `,el('span',{'data-used':''},`${m.channels.filter(c=>c.enabled).length} utilizados`))),el('label',{},'Nome do módulo',name)));
+    main.append(el('div',{className:'bar module-header'},el('div',{},el('div',{className:'module-heading'},el('h2',{'data-title':''},m.display_name),el('span',{className:`badge ${current.availability}`},statusLabel(current.availability))),el('p',{className:'muted'},`Serial ${m.serial} · ${m.channel_count} canais · `,el('span',{'data-used':''},`${m.channels.filter(c=>c.enabled).length} utilizados`)))));
     const retry=button('Revisar / tentar novamente',()=>this.retrySave());retry.dataset.retry='';retry.hidden=!this.saveError;
-    main.append(el('div',{className:'save-bar'},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveMessage),retry),el('p',{className:'helper'},'Edição salva automaticamente. Só o teste envia comandos ao relé.'));
+    main.append(el('div',{className:'save-bar'},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveMessage),retry),el('p',{className:'helper'},'Edição salva automaticamente. Controles de energia acionam os relés.'));
     const channels=el('section',{className:'channels','aria-label':`Canais de ${m.technical_id}`},el('div',{className:'channel-head','aria-hidden':'true'},...['Canal','Teste','Nome do canal','Cômodo','Tipo','Usar'].map(t=>el('span',{},t))));
-    const details=el('details',{className:'module-details'},el('summary',{},'Detalhes técnicos dos canais'),el('p',{},'Tipo, uso e cômodo alteram entidades do Home Assistant e podem afetar automações. Editar não envia ON/OFF. Padrão do módulo permite herdar a área do dispositivo.'));
     for(const c of m.channels){
       const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);}});
       const type=el('select',{'aria-label':`Tipo R${c.number}`,onchange:e=>{c.entity_type=e.target.value;this.changed(true);}},el('option',{value:''},'Selecionar'),el('option',{value:'light'},'Luz'),el('option',{value:'switch'},'Switch'));type.value=c.entity_type;
@@ -329,11 +366,10 @@ export class DingtianPanel extends HTMLElement {
       if(c.area_id && !(this.data.areas||[]).some(a=>a.area_id===c.area_id))area.append(el('option',{value:c.area_id},'Área removida · selecione outra'));
       area.value=c.area_id||'';
       const live=current?.channels[c.number-1]||c;
-      details.append(el('div',{className:'technical-row'},el('strong',{},`R${c.number} · ${c.unique_id}`),el('code',{},`Entidade: ${c.entity_id||'ainda não criada'}`),el('code',{},`Estado: ${live.state}`),el('code',{},`Tópico de estado: ${c.topics?.state_topic||''}`),el('code',{},`Comando: ${c.topics?.command_topic||''}`),el('code',{},`Disponibilidade: ${c.topics?.availability_topic||''}`)));
       const test=el('div',{className:'test-control','data-test':c.number});this.fillTest(test,current||m,live);
-      channels.append(el('article',{className:'channel'},el('div',{className:'position'},`R${c.number}`),test,el('label',{className:'channel-name'},el('span',{className:'sr'},'Nome do canal'),display),el('label',{className:'channel-area'},el('span',{className:'sr'},'Cômodo'),area),el('label',{className:'channel-type'},el('span',{className:'sr'},'Tipo'),type),el('label',{className:'inline channel-use'},use,el('span',{},'Usar'))));
+      channels.append(el('article',{className:'channel','data-channel':c.number},el('div',{className:'position'},`R${c.number}`),test,el('label',{className:'channel-name'},el('span',{className:'sr'},'Nome do canal'),display),el('label',{className:'channel-area'},el('span',{className:'sr'},'Cômodo'),area),el('label',{className:'channel-type'},el('span',{className:'sr'},'Tipo'),type),el('label',{className:'inline channel-use'},use,el('span',{},'Usar'))));
     }
-    main.append(channels,details);this.updateSaveStatus();
+    main.append(channels);this.updateSaveStatus();
   }
 }
 if (!customElements.get('smart-house-dingtian-panel')) customElements.define('smart-house-dingtian-panel', DingtianPanel);

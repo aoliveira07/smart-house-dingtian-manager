@@ -1,4 +1,4 @@
-# Instalação e uso — aplicativo 1.1.2
+# Instalação e uso — aplicativo 1.2.0
 
 ## Requisitos
 
@@ -9,15 +9,15 @@ Home Assistant OS/Supervisor, Core 2026.9.2+, CPU amd64 ou aarch64, administrado
 1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
 2. Em **⋮ → Repositórios**, adicione `https://github.com/aoliveira07/smart-house-dingtian-manager`.
 3. Atualize a loja e abra **Smart House Dingtian Manager**.
-4. Instale a **1.1.2**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
+4. Instale a **1.2.0**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
 
 Não instale o ZIP de integração pelo HACS para obter o aplicativo. Não é necessário reiniciar o Core para instalar este aplicativo. Seu inventário começa vazio.
 
-Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.1.2.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
+Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.2.0.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
 
 ## Primeiro módulo e teste
 
-Cadastre serial e capacidade. Esses campos ficam fixos depois de salvar para impedir comandos baseados em edições ainda não confirmadas. Use um nome provisório se necessário. Abra o módulo e espere a disponibilidade `online`.
+Cadastre serial e capacidade. A capacidade fica fixa. O serial pode ser substituído pelo lápis da lista de módulos, com salvamento explícito. Use um nome provisório se necessário. Abra o módulo e espere a disponibilidade `online`.
 
 Cada canal possui um **toggle de teste real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. O clique envia o comando diretamente, sem janela de confirmação do navegador. Observe a carga localmente em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
 
@@ -63,4 +63,14 @@ Para desinstalar definitivamente e limpar as entidades deste gerenciador, use **
 - **Resultado físico não confirmado:** observe a carga antes de decidir o próximo comando; não suponha OFF.
 - **Cadastro alterado:** use Revisar / tentar novamente para conferir a edição e a versão salva pela outra sessão.
 
-A versão 1.1.2 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
+A versão 1.2.0 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
+
+## Controles e substituição de módulo — 1.2.0
+
+Na lista de módulos, o lápis permite editar nome e número de série em uma única operação. Use um equipamento substituto com a mesma quantidade de canais. O serial é validado contra os demais módulos; os tópicos MQTT são substituídos preservando unique_id, entity_id, nomes, tipos e cômodos. Capacidade e identidade lógica permanecem fixas. Uma falha de sincronização pode ser retomada sem comandos de relé.
+
+Na página de canais, nome e serial do módulo são somente leitura. O botão redondo alterna o relé conforme o estado recebido. Em estado desconhecido, há duas ações explícitas de energia, com identificação acessível e por tooltip.
+
+O filtro Cômodo limita a lista e os canais. Todos os cômodos remove o filtro; Sem cômodo seleciona canais sem área própria nem herdada do dispositivo. Os contadores mostram luzes em uso, relés em uso, relés acionados e relés sem estado recebido. Ligar seleção e Desligar seleção comandam somente os canais marcados como Usar dos módulos visíveis, respeitando a busca e o cômodo. Dentro de um módulo, a ação fica limitada a ele. Seleção offline ou com comando pendente é bloqueada antes do envio; uma falha durante o envio interrompe os canais restantes, mostra o progresso e não reenvia automaticamente. Nenhuma operação coletiva é feita ao editar, salvar ou trocar serial.
+
+O ícone do aplicativo é distribuído em icon.png, seguindo a [documentação do Home Assistant](https://developers.home-assistant.io/docs/apps/presentation/).

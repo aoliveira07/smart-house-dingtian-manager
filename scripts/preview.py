@@ -24,9 +24,10 @@ component.hass={connection:{subscribeMessage:async cb=>{notify=cb;return()=>{};}
  if(m.action==='create'){
   const n=data.next_module_number++,id=crypto.randomUUID().replaceAll('-','');
   data.modules[id]={...m.data,module_uuid:id,technical_id:`Cabeado${n}`,used_count:0,availability:'unknown',channels:Array.from({length:m.data.channel_count},(_,i)=>({number:i+1,enabled:false,entity_type:'light',display_name:`Saída ${i+1}`,unique_id:`Cabeado${n}-r${i+1}`,last_entity_ids:{},entity_id:null,state:'unknown',topics:{}}))};data.revision++;
- }else if(m.action==='save') {const mod=data.modules[m.data.module_uuid];mod.display_name=m.data.display_name;m.data.channels.forEach((c,i)=>Object.assign(mod.channels[i],c));data.modules[m.data.module_uuid].used_count=m.data.channels.filter(c=>c.enabled).length;data.revision++;}
+ }else if(m.action==='save') {const mod=data.modules[m.data.module_uuid];if(m.data.display_name!==undefined)mod.display_name=m.data.display_name;m.data.channels.forEach((c,i)=>Object.assign(mod.channels[i],c));data.modules[m.data.module_uuid].used_count=m.data.channels.filter(c=>c.enabled).length;data.revision++;}
  else if(m.action==='delete'){delete data.modules[m.data.module_uuid];data.revision++;}
- else if(m.action==='operate')throw new Error('Operação física não disponível no teste visual.');
+ else if(m.action==='edit_module'){Object.assign(data.modules[m.data.module_uuid],m.data);data.revision++;}
+ else if(m.action==='operate'||m.action==='operate_group')throw new Error('Operação física não disponível no teste visual.');
  if(m.action!=='list'){sessionStorage.setItem('dingtian-demo',JSON.stringify(data));notify();}return structuredClone(data);
 }};
 </script></html>"""

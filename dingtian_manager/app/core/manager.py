@@ -4,7 +4,16 @@ import asyncio
 import json
 from copy import deepcopy
 
-from .models import ManagerError, initial, new_module, unique_module_name, update_module, validate_storage
+from .models import (
+    ManagerError,
+    initial,
+    name,
+    new_module,
+    serial,
+    unique_module_name,
+    update_module,
+    validate_storage,
+)
 from .mqtt_discovery import discovery
 
 
@@ -74,6 +83,24 @@ class Manager:
                 if action == "delete":
                     destructive = True
                     module["deleted"] = True
+                elif action == "edit_module":
+                    if set(data) != {"module_uuid", "display_name", "serial"}:
+                        raise ManagerError("Envie somente nome e serial do módulo.")
+                    module["display_name"] = name(data["display_name"])
+                    unique_module_name(desired, module)
+                    replacement = serial(data["serial"])
+                    if any(
+                        m["module_uuid"] != mid and m["serial"] == replacement
+                        for m in desired["modules"].values()
+                    ):
+                        raise ManagerError("Serial/base MQTT já cadastrado.")
+                    if replacement != module["serial"]:
+                        if not self.port.connected:
+                            raise ManagerError("Reconecte o broker antes de substituir o módulo.")
+                        live = self.snapshot()["modules"][mid]
+                        if any(c.get("test", {}).get("status") == "pending" for c in live["channels"]):
+                            raise ManagerError("Aguarde os comandos pendentes antes de substituir o módulo.")
+                        module["serial"] = replacement
                 elif action == "save":
                     updated = update_module(module, data)
                     if updated["display_name"] != module["display_name"]:
@@ -166,3 +193,59 @@ class Manager:
             if not self.port.connected:
                 raise ManagerError("Broker offline; comando descartado, sem fila.")
             await self.port.operate(module, c, payload)
+
+    async def operate_group(self, data, confirmed, revision):
+        """An explicit, ephemeral batch. Never persisted or replayed after a failure."""
+        if self.lock.locked():
+            raise ManagerError("Gerenciador ocupado; comando descartado, sem fila.")
+        async with self.lock:
+            if set(data) != {"module_ids", "area_id", "payload"}:
+                raise ManagerError("Parâmetros de grupo inválidos.")
+            ids, area, payload = data["module_ids"], data["area_id"], data["payload"]
+            if type(revision) is not int or revision != self.state["revision"]:
+                raise ManagerError("Cadastro alterado. Atualize a seleção.")
+            if confirmed is not True or payload not in ("ON", "OFF"):
+                raise ManagerError("Selecione ligar ou desligar o grupo.")
+            if (
+                not isinstance(ids, list)
+                or not ids
+                or any(not isinstance(mid, str) for mid in ids)
+                or len(set(ids)) != len(ids)
+            ):
+                raise ManagerError("Seleção de módulos inválida.")
+            if area is not None and not isinstance(area, str):
+                raise ManagerError("Filtro de cômodo inválido.")
+            snapshot = self.snapshot()
+            if snapshot.get("error") or self.state["prepared_removal"] or not self.port.connected:
+                raise ManagerError("Sincronização/conexão pendente. Nenhum comando enviado.")
+            if area not in (None, "") and area not in {a["area_id"] for a in snapshot.get("areas", [])}:
+                raise ManagerError("Cômodo não encontrado.")
+            selected = []
+            for mid in ids:
+                m = snapshot["modules"].get(mid)
+                if not m or m["deleted"]:
+                    raise ManagerError("Módulo não encontrado.")
+                for c in m["channels"]:
+                    if not c["enabled"] or (area is not None and (c.get("effective_area_id") or "") != area):
+                        continue
+                    if m.get("availability") != "online" or c.get("test", {}).get("status") == "pending":
+                        raise ManagerError(
+                            "Há módulo offline ou comando pendente na seleção. Nenhum comando enviado."
+                        )
+                    selected.append((mid, c["number"]))
+            if not selected:
+                raise ManagerError("Nenhum canal em uso neste filtro.")
+            sent = []
+            for mid, number in selected:
+                m = self.state["modules"][mid]
+                try:
+                    await self.port.operate(m, m["channels"][number - 1], payload)
+                except Exception as exc:
+                    return {
+                        "sent": sent,
+                        "total": len(selected),
+                        "error": f"Envio interrompido em R{number}: {exc}. Sem reenvio automático.",
+                        "state_confirmed": False,
+                    }
+                sent.append({"module_uuid": mid, "number": number})
+            return {"sent": sent, "total": len(selected), "state_confirmed": False}

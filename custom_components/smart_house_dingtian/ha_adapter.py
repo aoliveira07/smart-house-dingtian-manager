@@ -127,12 +127,17 @@ class HAPort:
             module["availability"] = (
                 "broker_offline" if not self.connected else lwt if lwt in ("online", "offline") else "unknown"
             )
+            device = dr.async_get(self.hass).async_get_device(
+                identifiers={("mqtt", f"shd_{module['module_uuid']}")}
+            )
+            module["area_id"] = device.area_id if device else None
             module["used_count"] = sum(c["enabled"] for c in module["channels"])
             for c in module["channels"]:
                 addresses = topics(module, c)
                 entry = self.registry_entry(module, c)
                 current = self.hass.states.get(entry.entity_id) if entry else None
                 c["entity_id"] = entry.entity_id if entry else None
+                c["effective_area_id"] = c.get("area_id") or module["area_id"]
                 c["effective_name"] = current.name if current else c["display_name"]
                 c["topics"] = addresses
                 c["test"] = dict(self.tests.get(module, c))
@@ -377,10 +382,26 @@ class HAPort:
 
         self.retry_task = self.entry.async_create_background_task(self.hass, run(), "Dingtian reconciliation")
 
+    def forget_prefix(self, prefix):
+        for topic in list(self.received):
+            if topic.startswith(prefix):
+                self.received.pop(topic, None)
+        for topic in list(self.tests.items):
+            if topic.startswith(prefix):
+                timer = self.tests.timers.pop(topic, None)
+                if timer:
+                    timer.cancel()
+                self.tests.items.pop(topic, None)
+
     async def sync_subscriptions(self):
-        active = self.manager.state["modules"]
+        active = {
+            f"{m['mqtt_prefix']}/relay{m['serial']}/out/#": m
+            for m in self.manager.state["modules"].values()
+            if not m["deleted"]
+        }
         for mid in set(self.module_unsubs) - set(active):
             self.module_unsubs.pop(mid)()
+            self.forget_prefix(mid[:-1])
         for mid, module in active.items():
             if mid in self.module_unsubs:
                 continue

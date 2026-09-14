@@ -13,7 +13,7 @@ async function panel(modules=[]){
   const requests=[];
   const data={revision:1,next_module_number:modules.length+1,modules:Object.fromEntries(modules.map(m=>[m.module_uuid,m])),broker_connected:true,error:null,areas:[{area_id:'cozinha',name:'Cozinha'},{area_id:'sala',name:'Sala'}]};
   const node=document.createElement('smart-house-dingtian-panel');
-  node.hass={callWS:async msg=>{requests.push(structuredClone(msg));if(msg.action==='save'){const mod=data.modules[msg.data.module_uuid];mod.display_name=msg.data.display_name;msg.data.channels.forEach((c,i)=>Object.assign(mod.channels[i],structuredClone(c)));data.revision++;}return structuredClone(data);},connection:{subscribeMessage:async()=>()=>{}}};
+  node.hass={callWS:async msg=>{requests.push(structuredClone(msg));if(msg.action==='save'){const mod=data.modules[msg.data.module_uuid];if(msg.data.display_name!==undefined)mod.display_name=msg.data.display_name;msg.data.channels.forEach((c,i)=>Object.assign(mod.channels[i],structuredClone(c)));data.revision++;}return structuredClone(data);},connection:{subscribeMessage:async()=>()=>{}}};
   document.body.replaceChildren(node);await tick();
   return {node,requests,data};
 }
@@ -27,7 +27,7 @@ test('separate 8,16,32 channel pages and history',async()=>{
   for(const [index,count] of [[1,8],[2,16],[3,32]]){
     node.navigate(String(index).padStart(32,'0'));
     assert.equal(node.shadowRoot.querySelectorAll('.channel').length,count);
-    assert.equal(node.shadowRoot.querySelectorAll('nav [aria-current=page]').length,1);
+    assert.equal(node.shadowRoot.querySelectorAll('nav').length,0);
   }
   node.navigate('');assert.equal(node.shadowRoot.querySelectorAll('.channel').length,0);
 });
@@ -158,13 +158,14 @@ test('reload restores the unsaved draft and revision conflict does not overwrite
   assert.equal(data.modules[m.module_uuid].channels[1].display_name,'Outra aba');
 });
 
-test('debounce saves without a button and module name blur flushes immediately',async()=>{
+test('debounce saves channels and module identity is read only here',async()=>{
   const m=moduleData(1,8);const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
   const input=node.shadowRoot.querySelector('[aria-label="Nome R1"]');
   input.value='Auto';input.dispatchEvent(new Event('input'));
   await new Promise(resolve=>setTimeout(resolve,680));assert.equal(node.dirty,false);
-  const name=node.shadowRoot.querySelector('[data-module-name]');name.value='Novo quadro';name.dispatchEvent(new Event('input'));name.dispatchEvent(new Event('blur'));await tick();
-  assert.equal(requests.filter(r=>r.action==='save').at(-1).data.display_name,'Novo quadro');
+  assert.equal(node.shadowRoot.querySelector('[data-module-name]'),null);
+  assert.equal(requests.filter(r=>r.action==='save').at(-1).data.display_name,undefined);
+  assert.equal(node.shadowRoot.querySelector('.module-details'),null);
   assert.equal(requests.filter(r=>r.action==='operate').length,0);
 });
 
@@ -183,4 +184,34 @@ test('draft ownership is unique per tab and survives reload on local HTTP',async
   window.sessionStorage.removeItem(key); // Another browser tab has its own session storage.
   const other=document.createElement('smart-house-dingtian-panel');
   assert.notEqual(first.editorId,other.editorId);
+});
+
+
+test('area filter selects matching modules and channels, counts live state and scopes bulk command',async()=>{
+ const a=moduleData(1,8),b=moduleData(2,8);a.availability=b.availability='online';
+ a.channels[0].enabled=a.channels[1].enabled=b.channels[0].enabled=true;
+ a.channels[0].area_id='cozinha';a.channels[1].area_id='sala';b.area_id='sala';
+ a.channels[0].state='ON';a.channels[1].state=b.channels[0].state='OFF';
+ const {node,requests,data}=await panel([a,b]);
+ const filter=node.shadowRoot.querySelector('[aria-label="Filtrar por cômodo"]');filter.value='cozinha';filter.dispatchEvent(new Event('change'));
+ assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
+ assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/1 luzes · 1 relés em uso · 1 acionados/);
+ const original=node.hass.callWS;node.hass.callWS=async msg=>{if(msg.action==='operate_group'){requests.push(msg);return {sent:[{module_uuid:a.module_uuid,number:1}]};}return original(msg);};
+ node.shadowRoot.querySelector('.group-off').click();node.shadowRoot.querySelector('.group-off').click();await tick();
+ const batch=requests.filter(r=>r.action==='operate_group');assert.equal(batch.length,1);assert.deepEqual(batch[0].data,{module_ids:[a.module_uuid],area_id:'cozinha',payload:'OFF'});
+ await node.navigate(a.module_uuid);assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,1);
+ const power=node.shadowRoot.querySelector('[data-test="1"] button');assert.equal(power.textContent,'⏻');assert.equal(power.getAttribute('aria-checked'),'true');
+ data.modules[a.module_uuid].channels[0].state='OFF';await node.load();assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/0 acionados/);
+});
+
+test('overview edits serial and name together, preserving channels and showing rejected edits',async()=>{
+ const m=moduleData(1,8);const {node,requests}=await panel([m]);
+ assert.equal(node.shadowRoot.querySelector('nav'),null);
+ node.shadowRoot.querySelector(`[aria-label="Editar módulo ${m.display_name}"]`).click();
+ const dialog=node.shadowRoot.querySelector('dialog');assert.ok(dialog);
+ dialog.querySelector('[aria-label="Nome do módulo"]').value='Novo quadro';dialog.querySelector('[aria-label="Número de série"]').value='00999';
+ node.hass.callWS=async msg=>{requests.push(msg);throw new Error('Serial/base MQTT já cadastrado.');};
+ dialog.querySelector('form').dispatchEvent(new Event('submit',{cancelable:true}));await tick();
+ const req=requests.at(-1);assert.equal(req.action,'edit_module');assert.deepEqual(req.data,{module_uuid:m.module_uuid,display_name:'Novo quadro',serial:'00999'});
+ assert.match(dialog.textContent,/já cadastrado/);assert.equal(dialog.querySelector('[aria-label="Número de série"]').value,'00999');
 });

@@ -393,3 +393,134 @@ async def test_physical_commands_never_wait_behind_other_operations(tmp_path):
         await first
         port.tests.close()
     assert client.published == [("/Cabeado/relay00123/in/r7", "ON", 0, False)]
+
+
+async def test_replace_serial_preserves_entities_and_moves_all_topics(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(enabled=True, display_name="Bancada", area_id="cozinha")
+    module["channels"][1].update(enabled=True, entity_type="switch")
+    await manager.mutate("save", 1, module)
+    identities = deepcopy(client.entities)
+    old_topics = set(client.discovery)
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    client.receive("/Cabeado/relay00123/out/r1", "ON")
+    await manager.mutate(
+        "edit_module", 2, {"module_uuid": mid, "serial": "00999", "display_name": "Novo quadro"}
+    )
+    await port.sync_subscriptions()
+    assert manager.state["error"] is None
+    assert set(client.discovery) == old_topics
+    assert client.entities == identities
+    assert manager.snapshot()["modules"][mid]["availability"] == "unknown"
+    assert not any("relay00123" in topic for topic, _ in client.subs.values())
+    assert not any("relay00123" in topic for topic in port.received)
+    for record in manager.state["owned_topics"].values():
+        assert "relay00999" in record["payload"]["command_topic"]
+        assert record["payload"]["device"]["serial_number"] == "00999"
+        assert "relay00123" not in record["applied"]
+    assert all(
+        "relay00999" in c["topics"]["state_topic"] for c in manager.snapshot()["modules"][mid]["channels"]
+    )
+    assert not any("/in/" in topic for topic, *_ in client.published)
+    restarted = Manager(port)
+    await restarted.load()
+    assert restarted.state["modules"][mid]["serial"] == "00999"
+
+
+async def test_serial_replacement_rejects_duplicate_and_recovers_partial_publish(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    await manager.mutate("create", 1, {"serial": "456", "channel_count": 8})
+    before = deepcopy(manager.state)
+    with pytest.raises(ManagerError, match="já cadastrado"):
+        await manager.mutate("edit_module", 2, {"module_uuid": mid, "serial": "456", "display_name": "Novo"})
+    assert manager.state == before
+    module = deepcopy(manager.state["modules"][mid])
+    for c in module["channels"][:2]:
+        c["enabled"] = True
+    await manager.mutate("save", 2, module)
+    publish = client.publish
+
+    async def fail(topic, payload, qos, retain):
+        if payload and "relay999" in payload:
+            raise OSError("temporary failure")
+        await publish(topic, payload, qos, retain)
+
+    client.publish = fail
+    await manager.mutate("edit_module", 3, {"module_uuid": mid, "serial": "999", "display_name": "Novo"})
+    assert manager.state["error"]
+    client.publish = publish
+    await manager.reconcile()
+    await port.sync_subscriptions()
+    assert manager.state["error"] is None
+    assert len(client.entities) == 2
+    assert all("relay999" in r["applied"] for r in manager.state["owned_topics"].values())
+    assert not any("/in/" in topic for topic, *_ in client.published)
+
+
+async def test_group_commands_filter_enabled_channels_inherit_area_and_never_replay(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(enabled=True, area_id="cozinha")
+    module["channels"][1].update(enabled=True, area_id="sala")
+    module["channels"][2].update(enabled=False, area_id="cozinha")
+    await manager.mutate("save", 1, module)
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    request = {"module_ids": [mid], "area_id": "cozinha", "payload": "ON"}
+    result = await manager.operate_group(request, True, 2)
+    assert result["sent"] == [{"module_uuid": mid, "number": 1}]
+    assert [p for p in client.published if "/in/" in p[0]] == [("/Cabeado/relay00123/in/r1", "ON", 0, False)]
+    with pytest.raises(ManagerError, match="pendente"):
+        await manager.operate_group(request, True, 2)
+    client.receive("/Cabeado/relay00123/out/r1", "ON")
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "offline")
+    with pytest.raises(ManagerError, match="offline"):
+        await manager.operate_group(request, True, 2)
+    await manager.reconcile()
+    assert len([p for p in client.published if "/in/" in p[0]]) == 1
+    port.tests.close()
+
+
+async def test_group_failure_reports_partial_send_without_retry(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    for c in module["channels"][:3]:
+        c["enabled"] = True
+    await manager.mutate("save", 1, module)
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    publish = client.publish
+
+    async def fail(topic, payload, qos, retain):
+        if topic.endswith("/in/r2"):
+            raise OSError("connection lost")
+        await publish(topic, payload, qos, retain)
+
+    client.publish = fail
+    result = await manager.operate_group({"module_ids": [mid], "area_id": None, "payload": "OFF"}, True, 2)
+    assert result["sent"] == [{"module_uuid": mid, "number": 1}]
+    assert result["total"] == 3 and "interrompido" in result["error"]
+    assert len([p for p in client.published if "/in/" in p[0]]) == 1
+    assert manager.state["error"] is None
+    port.tests.close()
+
+
+async def test_group_uses_inherited_device_area_and_rejects_stale_or_invalid_requests(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["enabled"] = True
+    await manager.mutate("save", 1, module)
+    device = next(iter(client.devices.values()))
+    device["area_id"] = "sala"
+    await port.registries()
+    client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
+    data = {"module_ids": [mid], "area_id": "sala", "payload": "ON"}
+    with pytest.raises(ManagerError, match="alterado"):
+        await manager.operate_group(data, True, 1)
+    with pytest.raises(ManagerError):
+        await manager.operate_group(data, False, 2)
+    with pytest.raises(ManagerError, match="Nenhum canal"):
+        await manager.operate_group({**data, "area_id": "cozinha"}, True, 2)
+    assert not any("/in/" in p[0] for p in client.published)
+    result = await manager.operate_group(data, True, 2)
+    assert result["sent"] == [{"module_uuid": mid, "number": 1}]
+    port.tests.close()

@@ -1,8 +1,8 @@
-# Smart House Dingtian Manager — 1.1.2
+# Smart House Dingtian Manager — 1.2.0
 
 Aplicativo/add-on para **Home Assistant OS com Supervisor**, instalado pela tela **Aplicativos**. Organiza módulos Dingtian de **8, 16 ou 32 saídas**, com uma página por módulo e teste individual de relé antes de definir nome, tipo ou uso.
 
-**1.1.2 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
+**1.2.0 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
 
 ## Instalar como aplicativo
 
@@ -18,7 +18,7 @@ O aplicativo usa a conexão MQTT existente do Home Assistant pela API interna do
 
 [Instalação, atualização e migração](dingtian_manager/DOCS.md) · [Pacotes e releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases) · [Evidências dos testes](docs/TEST_RESULTS.md)
 
-## Atualização 1.1.2
+## Atualização 1.2.0
 
 Nomes de canais no HA sem prefixo automático do módulo, com correção dos registros existentes. Nomes repetidos entre módulos são rejeitados no cadastro e na edição.
 
@@ -35,7 +35,7 @@ O toggle envia ON/OFF diretamente, sem janela de confirmação do navegador. Est
 
 O teste funciona mesmo sem entidade, sem nome definitivo, sem tipo escolhido ou com uso desmarcado. Não cria Discovery nem modifica o formulário. Canais não utilizados continuam visíveis na administração. As entidades operacionais são criadas somente ao salvar canais utilizados.
 
-O estado exibido vem das mensagens do equipamento. A publicação não confirma a ação física: o painel aguarda retorno, limita comandos repetidos e informa timeout sem reenviar. Broker desconectado, módulo offline ou disponibilidade desconhecida bloqueiam comandos. **Salvar, navegar ou reiniciar não envia ON/OFF e não desfaz um teste anterior.** Não há teste coletivo, pulso ou OFF automático.
+O estado exibido vem das mensagens do equipamento. A publicação não confirma a ação física: o painel aguarda retorno, limita comandos repetidos e informa timeout sem reenviar. Broker desconectado, módulo offline ou disponibilidade desconhecida bloqueiam comandos. **Salvar, navegar ou reiniciar não envia ON/OFF e não desfaz um teste anterior.** Os controles coletivos atuam apenas sobre a seleção explícita de canais em uso. Não há pulso ou OFF automático.
 
 ## Identidade e MQTT
 
@@ -56,7 +56,7 @@ Inventário, UUIDs, sequência de módulos e diário Discovery ficam em `/data/i
 
 Atualize pela própria tela do aplicativo. A antiga integração continua no código para compatibilidade/migração, mas **não deve permanecer ativa simultaneamente com o aplicativo**. O backend bloqueia alterações nessa condição. A migração é explícita, importa o cadastro preservando IDs e aceita somente destino vazio; siga [DOCS.md](dingtian_manager/DOCS.md).
 
-O arquivo `smart-house-dingtian-manager-addon-1.1.2.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
+O arquivo `smart-house-dingtian-manager-addon-1.2.0.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
 
 ## Desenvolvimento
 
@@ -69,3 +69,13 @@ O arquivo `smart-house-dingtian-manager-addon-1.1.2.zip` contém o contexto inst
 - `pytest tests/ha`: testes em HA real 2026.9.2, com transporte MQTT simulado, executados em Linux/Python 3.14.
 
 A CI verifica o código gerado e constrói/inicia contêineres amd64 e arm64. Nenhum teste usa a residência. Consulte [arquitetura](docs/ARCHITECTURE.md) e [plano de testes](docs/TEST_PLAN.md).
+
+## Controles e substituição de módulo — 1.2.0
+
+Na lista de módulos, o lápis permite editar nome e número de série em uma única operação. Use um equipamento substituto com a mesma quantidade de canais. O serial é validado contra os demais módulos; os tópicos MQTT são substituídos preservando unique_id, entity_id, nomes, tipos e cômodos. Capacidade e identidade lógica permanecem fixas. Uma falha de sincronização pode ser retomada sem comandos de relé.
+
+Na página de canais, nome e serial do módulo são somente leitura. O botão redondo alterna o relé conforme o estado recebido. Em estado desconhecido, há duas ações explícitas de energia, com identificação acessível e por tooltip.
+
+O filtro Cômodo limita a lista e os canais. Todos os cômodos remove o filtro; Sem cômodo seleciona canais sem área própria nem herdada do dispositivo. Os contadores mostram luzes em uso, relés em uso, relés acionados e relés sem estado recebido. Ligar seleção e Desligar seleção comandam somente os canais marcados como Usar dos módulos visíveis, respeitando a busca e o cômodo. Dentro de um módulo, a ação fica limitada a ele. Seleção offline ou com comando pendente é bloqueada antes do envio; uma falha durante o envio interrompe os canais restantes, mostra o progresso e não reenvia automaticamente. Nenhuma operação coletiva é feita ao editar, salvar ou trocar serial.
+
+O ícone do aplicativo é distribuído em icon.png, seguindo a [documentação do Home Assistant](https://developers.home-assistant.io/docs/apps/presentation/).

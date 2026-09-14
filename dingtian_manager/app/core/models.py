@@ -106,7 +106,7 @@ def update_module(module, data):
                 "Serial, capacidade e identidade ficam fixos após o cadastro. Cadastre outro módulo."
             )
     result = deepcopy(module)
-    result["display_name"] = name(data.get("display_name"))
+    result["display_name"] = name(data.get("display_name", module["display_name"]))
     items = data.get("channels")
     if not isinstance(items, list) or len(items) != module["channel_count"]:
         raise ManagerError("Envie todos os canais do módulo em um único lote.")

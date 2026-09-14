@@ -18,7 +18,18 @@ def admin(connection):
     {
         vol.Required("type"): f"{DOMAIN}/request",
         vol.Required("action"): vol.In(
-            ("list", "get", "create", "save", "delete", "reconcile", "operate", "prepare_remove")
+            (
+                "list",
+                "get",
+                "create",
+                "save",
+                "edit_module",
+                "delete",
+                "reconcile",
+                "operate",
+                "operate_group",
+                "prepare_remove",
+            )
         ),
         vol.Optional("revision"): vol.All(int, vol.Range(min=0)),
         vol.Optional("data", default={}): dict,
@@ -41,6 +52,8 @@ async def request(hass, connection, msg):
                 raise ManagerError("Módulo não encontrado.")
         elif action == "reconcile":
             result = await manager.reconcile(force=True)
+        elif action == "operate_group":
+            result = await manager.operate_group(data, msg["confirmed"], msg.get("revision"))
         elif action == "operate":
             if set(data) != {"module_uuid", "number", "payload"}:
                 raise ManagerError("Parâmetros de comando inválidos; tópicos livres não são aceitos.")

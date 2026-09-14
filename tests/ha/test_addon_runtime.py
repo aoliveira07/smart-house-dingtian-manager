@@ -5,6 +5,7 @@ from copy import deepcopy
 
 import pytest
 from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
@@ -90,11 +91,35 @@ async def test_standalone_application_real_ha_apis(
         assert manager.state["error"] is None
         assert registry.async_get("light.minha_bancada").name == "Novo nome"
         assert registry.async_get("light.minha_bancada").area_id is None
-        await manager.mutate("delete", 4, {"module_uuid": mid}, True)
+        old_entry = registry.async_get("light.minha_bancada")
+        await manager.mutate(
+            "edit_module", 4, {"module_uuid": mid, "serial": "00999", "display_name": "Quadro novo"}
+        )
+        await port.sync_subscriptions()
+        await hass.async_block_till_done()
+        assert manager.state["error"] is None
+        new_entry = registry.async_get("light.minha_bancada")
+        assert new_entry.id == old_entry.id and new_entry.unique_id == old_entry.unique_id
+        assert hass.states.get("light.minha_bancada").attributes["friendly_name"] == "Novo nome"
+        assert dr.async_get(hass).async_get(new_entry.device_id).serial_number == "00999"
+        assert not any("relay00123" in topic for topic in port.subscriptions)
+        async_fire_mqtt_message(hass, "/Cabeado/relay00999/out/lwt_availability", "online")
+        for _ in range(100):
+            if port.received.get("/Cabeado/relay00999/out/lwt_availability") == "online":
+                break
+            await asyncio.sleep(0.01)
+        result = await manager.operate_group(
+            {"module_ids": [mid], "area_id": None, "payload": "OFF"}, True, 5
+        )
+        assert result["sent"] == [{"module_uuid": mid, "number": 7}]
+        await manager.mutate("delete", 5, {"module_uuid": mid}, True)
         assert manager.state["error"] is None
         assert not registry.async_get("light.minha_bancada")
         commands = [c.args[:4] for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]]
-        assert commands == [("/Cabeado/relay00123/in/r7", "ON", 0, False)]
+        assert commands == [
+            ("/Cabeado/relay00123/in/r7", "ON", 0, False),
+            ("/Cabeado/relay00999/in/r7", "OFF", 0, False),
+        ]
         await port.sync_subscriptions()
         assert len(port.subscriptions) == 1
     finally:

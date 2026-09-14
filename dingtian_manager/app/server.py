@@ -62,6 +62,8 @@ async def api(request):
         return web.json_response(result)
     if not port.client.connected:
         raise ManagerError("Home Assistant desconectado. Nenhum comando foi enfileirado.")
+    if action == "operate_group":
+        return web.json_response(await manager.operate_group(data, confirmed, revision))
     if action == "operate":
         if set(data) != {"module_uuid", "number", "payload"}:
             raise ManagerError("Parâmetros inválidos; tópicos arbitrários não são aceitos.")
@@ -90,7 +92,7 @@ async def api(request):
             manager.state = inventory
             await port.sync_subscriptions()
         return web.json_response(manager.snapshot())
-    if action not in {"create", "save", "delete", "prepare_remove", "reconcile"}:
+    if action not in {"create", "save", "edit_module", "delete", "prepare_remove", "reconcile"}:
         raise ManagerError("Operação inválida.")
     # Validate actual configuration before generating targets and applying changes.
     async with manager.lock:

@@ -189,7 +189,7 @@ class RemotePort:
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.1.2"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.2.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -201,10 +201,12 @@ class RemotePort:
             module["availability"] = (
                 "broker_offline" if not self.connected else lwt if lwt in ("online", "offline") else "unknown"
             )
+            module["area_id"] = (self.device(module) or {}).get("area_id")
             module["used_count"] = sum(c["enabled"] for c in module["channels"])
             for channel in module["channels"]:
                 entry = self.registry_entry(module, channel)
                 channel["entity_id"] = entry["entity_id"] if entry else None
+                channel["effective_area_id"] = channel.get("area_id") or module["area_id"]
                 channel["effective_name"] = channel["display_name"]
                 channel["topics"] = topics(module, channel)
                 raw = self.received.get(channel["topics"]["state_topic"])
@@ -347,6 +349,17 @@ class RemotePort:
                     if pending.startswith(base):
                         self.tests.fail(pending, "Módulo offline; resultado físico não confirmado.")
 
+    def forget_prefix(self, prefix):
+        for topic in list(self.received):
+            if topic.startswith(prefix):
+                self.received.pop(topic, None)
+        for topic in list(self.tests.items):
+            if topic.startswith(prefix):
+                timer = self.tests.timers.pop(topic, None)
+                if timer:
+                    timer.cancel()
+                self.tests.items.pop(topic, None)
+
     async def sync_subscriptions(self):
         wanted = {self.prefix + "/#"}
         for topic, record in self.manager.state["owned_topics"].items():
@@ -356,6 +369,7 @@ class RemotePort:
             wanted.add(f"{module['mqtt_prefix']}/relay{module['serial']}/out/#")
         for topic in set(self.subscriptions) - wanted:
             await self.client.unsubscribe(self.subscriptions.pop(topic))
+            self.forget_prefix(topic[:-1])
         for topic in wanted - set(self.subscriptions):
             self.subscriptions[topic] = await self.client.call(
                 "mqtt/subscribe", topic=topic, qos=1, callback=self.receive

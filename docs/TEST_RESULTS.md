@@ -1,3 +1,7 @@
+# Atualização 1.2.0
+
+Validação local: 51 testes do motor/aplicativo e 17 da interface aprovados. Regressões de substituição de serial, conservação de entidades e áreas, recuperação de falha parcial, filtro por cômodo, comando coletivo sem repetição e edição exclusiva pela lista. Testes reais de APIs do HA e contêineres são obrigatórios na CI antes da publicação.
+
 # Atualização 1.1.2 — nomes das entidades e módulos
 
 Validação local: 46 testes do motor/aplicativo e 15 da interface aprovados; Ruff e geração dos arquivos aprovados. Regressões cobrem nome antes de habilitar, reparo de entidades existentes, nome externo preservado, troca de tipo e duplicidade de módulos sem persistência parcial. Teste com APIs reais do HA verifica friendly_name sem prefixo após habilitar e após reparar registro antigo; execução na CI antes da publicação.
