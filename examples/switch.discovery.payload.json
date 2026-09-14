@@ -1,0 +1,33 @@
+{
+  "unique_id": "Cabeado1-r2",
+  "name": "Saída de demonstração",
+  "state_topic": "/Cabeado/relay12345/out/r2",
+  "command_topic": "/Cabeado/relay12345/in/r2",
+  "availability": [
+    {
+      "topic": "/Cabeado/relay12345/out/lwt_availability",
+      "payload_available": "online",
+      "payload_not_available": "offline"
+    }
+  ],
+  "payload_on": "ON",
+  "payload_off": "OFF",
+  "state_on": "ON",
+  "state_off": "OFF",
+  "optimistic": false,
+  "qos": 0,
+  "retain": false,
+  "default_entity_id": "switch.cabeado1_r2",
+  "device": {
+    "identifiers": [
+      "shd_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ],
+    "name": "Módulo de demonstração",
+    "manufacturer": "Dingtian",
+    "model": "Perfil MQTT de 8 canais",
+    "serial_number": "12345"
+  },
+  "origin": {
+    "name": "Smart House Dingtian Manager"
+  }
+}

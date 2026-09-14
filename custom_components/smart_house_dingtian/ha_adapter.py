@@ -29,6 +29,7 @@ class HAPort:
         self.pending_echo = {}
         self.closed = False
         self.retry_task = None
+        self._prefix = mqtt.DEFAULT_PREFIX
 
     @property
     def connected(self):
@@ -36,7 +37,11 @@ class HAPort:
 
     @property
     def prefix(self):
-        return self.hass.data[mqtt.DATA_MQTT].client.conf.get(mqtt.CONF_DISCOVERY_PREFIX, mqtt.DEFAULT_PREFIX)
+        if mqtt.DATA_MQTT in self.hass.data:
+            self._prefix = self.hass.data[mqtt.DATA_MQTT].client.conf.get(
+                mqtt.CONF_DISCOVERY_PREFIX, mqtt.DEFAULT_PREFIX
+            )
+        return self._prefix
 
     async def load(self):
         return await self.store.async_load()
@@ -164,7 +169,9 @@ class HAPort:
                     cmd = cmd.replace("~", base)
                 yield topic, item.get("unique_id", item.get("uniq_id")), cmd
         # Debug info also exposes active YAML and expanded MQTT discovery config.
-        data = self.hass.data[mqtt.DATA_MQTT]
+        data = self.hass.data.get(mqtt.DATA_MQTT)
+        if data is None:
+            return
         for info in data.debug_info_entities.values():
             discovery_data = info.get("discovery_data") or {}
             payload = discovery_data.get("discovery_payload") or {}

@@ -36,6 +36,8 @@ Os IDs técnicos são reservados, não derivados de rótulos. `default_entity_id
 
 ## Referências oficiais verificadas
 
+O exemplo inicial de Discovery fornecido no handoff usava `schema: default` para light. A execução em HA 2026.9.2 comprovou que esse valor é rejeitado. A implementação e os exemplos públicos usam `schema: basic`, mantendo o contrato ON/OFF e todos os tópicos do equipamento.
+
 - [MQTT e Discovery](https://www.home-assistant.io/integrations/mqtt/)
 - [Painéis customizados](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/)
 - [API WebSocket](https://developers.home-assistant.io/docs/frontend/extending/websocket-api/)

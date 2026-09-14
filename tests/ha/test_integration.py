@@ -64,6 +64,7 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
 
     mqtt_mock.async_publish.side_effect = publish
     await manager.mutate("create", 0, {"serial": "00123", "channel_count": 8})
+    await manager.port.sync_subscriptions()
     mid = next(iter(manager.state["modules"]))
     data = deepcopy(manager.state["modules"][mid])
     data["channels"][0]["enabled"] = True
@@ -94,6 +95,7 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
     async_fire_mqtt_message(hass, "/Cabeado/relay00123/out/r1", "ON")
     await hass.async_block_till_done()
     assert hass.states.get("light.bancada").state == "on"
+    assert manager.snapshot()["modules"][mid]["channels"][0]["state"] == "ON"
     await manager.operate(mid, 1, "OFF", True)
     command = [c for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]][0]
     assert command.args[:4] == ("/Cabeado/relay00123/in/r1", "OFF", 0, False)

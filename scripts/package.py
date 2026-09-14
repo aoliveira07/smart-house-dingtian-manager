@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 INTEGRATION = ROOT / "custom_components" / "smart_house_dingtian"
@@ -26,7 +26,11 @@ def main():
     ]:
         with ZipFile(ROOT / "dist" / filename, "w", compression=8) as archive:
             for path in files:
-                archive.write(path, path.relative_to(base).as_posix())
+                info = ZipInfo(path.relative_to(base).as_posix(), (2026, 9, 14, 0, 0, 0))
+                info.compress_type = 8
+                info.create_system = 3
+                info.external_attr = 0o100644 << 16
+                archive.writestr(info, path.read_bytes())
         with ZipFile(ROOT / "dist" / filename) as archive:
             assert archive.testzip() is None
             assert not any(
