@@ -258,8 +258,14 @@ class HAPort:
                 except (ValueError, TypeError):
                     pass
 
-        topic = f"{self.prefix}/#"
-        self.unsubs.append(await mqtt.async_subscribe(self.hass, topic, discovery_received, qos=1))
+        prefixes = {self.prefix}
+        for topic, record in self.manager.state["owned_topics"].items():
+            marker = f"/{record['entity_type']}/shd_{self.manager.state['manager_uuid']}/"
+            prefixes.add(topic.split(marker)[0])
+        for prefix in prefixes:
+            self.unsubs.append(
+                await mqtt.async_subscribe(self.hass, f"{prefix}/#", discovery_received, qos=1)
+            )
         self.unsubs.append(mqtt.async_subscribe_connection_status(self.hass, self.connection_changed))
         self.unsubs.append(
             self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self.registry_changed)
