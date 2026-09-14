@@ -55,5 +55,5 @@ def discovery(state, module, channel, prefix):
     if domain == "switch":
         payload.update(state_on="ON", state_off="OFF")
     else:
-        payload["schema"] = "default"
+        payload["schema"] = "basic"
     return topic, payload

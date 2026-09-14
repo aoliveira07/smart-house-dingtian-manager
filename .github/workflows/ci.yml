@@ -43,3 +43,19 @@ jobs:
         with:
           category: integration
           ignore: brands
+  release:
+    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release ')
+    needs: [core, home-assistant, hacs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: installable-beta
+          path: dist
+      - name: Publish tested beta assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create v0.1.0b1 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "0.1.0b1 — Dingtian Manager beta" --notes-file docs/RELEASE_NOTES.md

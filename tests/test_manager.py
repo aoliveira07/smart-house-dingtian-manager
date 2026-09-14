@@ -139,6 +139,7 @@ async def test_mixed_channels_protocol_and_never_commands():
     assert payloads[0]["command_topic"] == "/Cabeado/relay00123/in/r1"
     assert payloads[1]["state_topic"] == "/Cabeado/relay00123/out/r7"
     assert "state_on" not in payloads[0]
+    assert payloads[0]["schema"] == "basic"
     assert payloads[1]["state_on"] == "ON"
     assert all(p["retain"] is False and p["optimistic"] is False and p["qos"] == 0 for p in payloads)
     assert all(t.startswith("custom_discovery/") and "/in/" not in t for t, _, _, _ in port.published)

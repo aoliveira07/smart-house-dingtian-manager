@@ -4,6 +4,7 @@ import asyncio
 from copy import deepcopy
 
 from homeassistant.core import CoreState
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_mqtt_message
 
@@ -72,21 +73,45 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
     assert hass.states.get("light.cabeado1_r1") is not None
     assert hass.states.get("switch.cabeado1_r7") is not None
     assert not any("/in/" in call.args[0] for call in mqtt_mock.async_publish.call_args_list)
+    # Explicit rename changes the HA registry name, preserving unique_id and ID.
+    data = deepcopy(manager.state["modules"][mid])
+    data["display_name"] = "Quadro de demonstração"
+    data["channels"][0]["display_name"] = "Luz da bancada"
+    await manager.mutate("save", manager.state["revision"], data)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    registered = registry.async_get("light.cabeado1_r1")
+    assert registered.unique_id == "Cabeado1-r1"
+    assert registered.name == "Luz da bancada"
+    # External HA overrides are read and not reset by reconciliation.
+    registry.async_update_entity("light.cabeado1_r1", name="Nome externo", new_entity_id="light.bancada")
+    await hass.async_block_till_done()
+    await manager.reconcile()
+    snapshot = manager.snapshot()["modules"][mid]["channels"][0]
+    assert snapshot["entity_id"] == "light.bancada"
+    assert snapshot["display_name"] == "Nome externo"
     async_fire_mqtt_message(hass, "/Cabeado/relay00123/out/lwt_availability", "online")
     async_fire_mqtt_message(hass, "/Cabeado/relay00123/out/r1", "ON")
     await hass.async_block_till_done()
-    assert hass.states.get("light.cabeado1_r1").state == "on"
+    assert hass.states.get("light.bancada").state == "on"
     await manager.operate(mid, 1, "OFF", True)
     command = [c for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]][0]
     assert command.args[:4] == ("/Cabeado/relay00123/in/r1", "OFF", 0, False)
-    assert hass.states.get("light.cabeado1_r1").state == "on"  # non-optimistic
+    assert hass.states.get("light.bancada").state == "on"  # non-optimistic
     data = deepcopy(manager.state["modules"][mid])
     data["channels"][0]["entity_type"] = "switch"
-    await manager.mutate("save", 2, data, True)
+    await manager.mutate("save", manager.state["revision"], data, True)
     assert manager.state["error"] is None
-    assert hass.states.get("light.cabeado1_r1") is None
+    assert hass.states.get("light.bancada") is None
     assert hass.states.get("switch.cabeado1_r1") is not None
-    await manager.mutate("delete", 3, {"module_uuid": mid}, True)
+    # Revert the domain and recover its last externally assigned entity_id.
+    data = deepcopy(manager.state["modules"][mid])
+    data["channels"][0]["entity_type"] = "light"
+    await manager.mutate("save", manager.state["revision"], data, True)
+    assert manager.state["error"] is None
+    assert hass.states.get("light.bancada") is not None
+    assert hass.states.get("switch.cabeado1_r1") is None
+    await manager.mutate("delete", manager.state["revision"], {"module_uuid": mid}, True)
     assert not manager.state["owned_topics"]
     assert hass.states.get("switch.cabeado1_r1") is None
     assert await hass.config_entries.async_unload(entry.entry_id)

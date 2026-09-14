@@ -1,6 +1,7 @@
 """Executed only in the Linux Home Assistant CI job."""
 
 import sys
+from unittest.mock import patch
 
 import pytest
 
@@ -22,5 +23,6 @@ async def runtime_lifecycle(hass):
     from homeassistant.core import CoreState
 
     hass.set_state(CoreState.running)
-    yield
+    with patch("homeassistant.components.mqtt.client.MQTT._async_start_misc_periodic"):
+        yield
     await hass.async_stop(force=True)
