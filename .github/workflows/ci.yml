@@ -1,4 +1,4 @@
-name: Validate integration
+name: Validate application and shared engine
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
@@ -14,11 +14,12 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: pip install pytest pytest-asyncio ruff
+      - run: pip install pytest pytest-asyncio ruff -r dingtian_manager/requirements.txt
       - run: ruff check . && ruff format --check .
-      - run: pytest tests/test_manager.py -q
+      - run: pytest tests/test_manager.py tests/test_addon.py -q
       - run: npm ci && npm run build && npm test
-      - run: git diff --exit-code custom_components/smart_house_dingtian/frontend
+      - run: python scripts/build_addon.py
+      - run: git diff --exit-code custom_components/smart_house_dingtian/frontend dingtian_manager/app/core dingtian_manager/static/panel.js
       - run: python scripts/package.py
       - uses: actions/upload-artifact@v4
         with:
@@ -43,9 +44,20 @@ jobs:
         with:
           category: integration
           ignore: brands
+  application-container:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - run: docker buildx build --platform ${{ matrix.platform }} --load -t dingtian-test dingtian_manager
+      - run: python scripts/smoke_container.py
   release:
     if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release ')
-    needs: [core, home-assistant, hacs]
+    needs: [core, home-assistant, hacs, application-container]
     runs-on: ubuntu-latest
     permissions:
       contents: write

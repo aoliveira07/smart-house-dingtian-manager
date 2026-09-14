@@ -102,7 +102,7 @@ async def test_empty_module_and_exact_capacity(count):
     assert module["serial"] == "00123"
 
 
-@pytest.mark.parametrize("serial", [None, "", 123, "12/3", "12+", "#", "12\n", " 123", "１２３", "1" * 65])
+@pytest.mark.parametrize("serial", [None, "", 123, "12/3", "12+", "#", "12\n", " 123", "ï¼‘ï¼’ï¼“", "1" * 65])
 async def test_invalid_serial_is_atomic(serial):
     manager, port, _ = await fresh()
     before = deepcopy(manager.state)
@@ -188,7 +188,7 @@ async def test_broker_offline_blocks_destructive_ops():
         await save(manager, mid, {1: {"enabled": False}}, True)
     assert before == manager.state
     with pytest.raises(ManagerError, match="offline"):
-        await manager.operate(mid, 1, "ON", True)
+        await manager.operate(mid, 1, "ON", True, manager.state["revision"])
     assert not any("/in/" in t for t, *_ in port.published)
 
 
@@ -230,7 +230,7 @@ async def test_invalid_batch_and_conflict_never_partially_apply():
     manager, port, mid = await fresh()
     before = deepcopy(manager.state)
     with pytest.raises(ManagerError):
-        await save(manager, mid, {1: {"enabled": True}, 8: {"display_name": ""}})
+        await save(manager, mid, {1: {"enabled": True}, 8: {"display_name": "", "enabled": True}})
     assert before == manager.state
     port.reject = True
     with pytest.raises(ManagerError, match="Conflito"):
@@ -253,14 +253,14 @@ async def test_concurrent_tabs_one_wins():
 
 async def test_explicit_physical_command_only():
     manager, port, mid = await fresh()
-    with pytest.raises(ManagerError):
-        await manager.operate(mid, 1, "ON", True)
+    await manager.operate(mid, 1, "ON", True, manager.state["revision"])
+    assert port.published == [("/Cabeado/relay00123/in/r1", "ON", 0, False)]
     await save(manager, mid, {1: {"enabled": True}})
     with pytest.raises(ManagerError):
-        await manager.operate(mid, 1, "ON", False)
+        await manager.operate(mid, 1, "ON", False, manager.state["revision"])
     with pytest.raises(ManagerError):
-        await manager.operate(mid, -1, "ON", True)
-    await manager.operate(mid, 1, "ON", True)
+        await manager.operate(mid, -1, "ON", True, manager.state["revision"])
+    await manager.operate(mid, 1, "ON", True, manager.state["revision"])
     assert port.published[-1] == ("/Cabeado/relay00123/in/r1", "ON", 0, False)
 
 

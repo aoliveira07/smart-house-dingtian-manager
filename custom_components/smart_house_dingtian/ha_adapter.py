@@ -13,6 +13,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .const import SIGNAL
 from .models import ManagerError
 from .mqtt_discovery import entity_id, topics
+from .relay_test import RelayTests
 from .storage import InventoryStore
 
 
@@ -29,6 +30,7 @@ class HAPort:
         self.pending_echo = {}
         self.closed = False
         self.retry_task = None
+        self.tests = RelayTests(self.changed)
         self._prefix = mqtt.DEFAULT_PREFIX
 
     @property
@@ -122,10 +124,9 @@ class HAPort:
                 c["entity_id"] = entry.entity_id if entry else None
                 c["effective_name"] = current.name if current else c["display_name"]
                 c["topics"] = addresses
+                c["test"] = dict(self.tests.get(module, c))
                 raw = self.received.get(addresses["state_topic"])
-                c["state"] = (
-                    raw if self.connected and lwt != "offline" and raw in ("ON", "OFF") else "unknown"
-                )
+                c["state"] = raw if self.connected and lwt == "online" and raw in ("ON", "OFF") else "unknown"
         return state
 
     def name_updates(self, before, desired):
@@ -254,12 +255,16 @@ class HAPort:
     async def operate(self, module, channel, payload):
         if not self.connected:
             raise ManagerError("Broker offline; comando descartado.")
-        if not self.registry_entry(module, channel):
-            raise ManagerError("Entidade MQTT ainda não disponível.")
-        # QoS 0 is not queued across MQTT disconnections. No retry is installed here.
-        await mqtt.async_publish(
-            self.hass, topics(module, channel)["command_topic"], payload, qos=0, retain=False
-        )
+        if self.received.get(topics(module, channel)["availability_topic"]) != "online":
+            raise ManagerError("Disponibilidade do módulo não confirmada; comando descartado.")
+        topic = self.tests.begin(module, channel, payload)
+        try:
+            await mqtt.async_publish(
+                self.hass, topics(module, channel)["command_topic"], payload, qos=0, retain=False
+            )
+        except Exception:
+            self.tests.fail(topic, "Falha no envio; resultado físico não confirmado. Sem reenvio.")
+            raise
 
     async def start(self):
         @callback
@@ -305,6 +310,7 @@ class HAPort:
 
     @callback
     def connection_changed(self, connected):
+        self.tests.disconnected()
         self.received.clear()  # never show stale restored state as current confirmation
         self.changed()
         if connected:
@@ -342,6 +348,12 @@ class HAPort:
             @callback
             def received(msg):
                 self.received[msg.topic] = msg.payload
+                self.tests.receive(msg.topic, msg.payload, msg.retain)
+                if msg.topic.endswith("/lwt_availability") and msg.payload != "online":
+                    base = msg.topic.rsplit("/", 1)[0] + "/"
+                    for topic in list(self.tests.timers):
+                        if topic.startswith(base):
+                            self.tests.fail(topic, "Módulo offline; resultado físico não confirmado.")
                 self.changed()
 
             base = f"{module['mqtt_prefix']}/relay{module['serial']}/out/#"
@@ -349,6 +361,7 @@ class HAPort:
 
     async def close(self):
         self.closed = True
+        self.tests.close()
         if self.retry_task and not self.retry_task.done():
             self.retry_task.cancel()
             try:

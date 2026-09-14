@@ -42,8 +42,14 @@ async def request(hass, connection, msg):
         elif action == "reconcile":
             result = await manager.reconcile(force=True)
         elif action == "operate":
+            if set(data) != {"module_uuid", "number", "payload"}:
+                raise ManagerError("Parâmetros de comando inválidos; tópicos livres não são aceitos.")
             await manager.operate(
-                data.get("module_uuid"), data.get("number"), data.get("payload"), msg["confirmed"]
+                data.get("module_uuid"),
+                data.get("number"),
+                data.get("payload"),
+                msg["confirmed"],
+                msg.get("revision"),
             )
             result = {"sent": True, "state_confirmed": False}
         else:

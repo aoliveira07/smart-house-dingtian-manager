@@ -37,6 +37,22 @@ def main():
                 "referencias_privadas" in f or f.endswith((".pyc", ".yaml")) for f in archive.namelist()
             )
         print(filename, (ROOT / "dist" / filename).stat().st_size, "bytes; verified")
+    addon = ROOT / "dingtian_manager"
+    target = ROOT / "dist/smart-house-dingtian-manager-addon-1.0.0.zip"
+    files = sorted(p for p in addon.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+    files.append(ROOT / "repository.json")
+    with ZipFile(target, "w", compression=8) as archive:
+        for path in files:
+            info = ZipInfo(path.relative_to(ROOT).as_posix(), (2026, 9, 14, 0, 0, 0))
+            info.compress_type = 8
+            info.create_system = 3
+            info.external_attr = 0o100644 << 16
+            archive.writestr(info, path.read_bytes())
+    with ZipFile(target) as archive:
+        assert archive.testzip() is None
+        assert "dingtian_manager/config.json" in archive.namelist()
+        assert "dingtian_manager/app/core/manager.py" in archive.namelist()
+    print(target.name, target.stat().st_size, "bytes; verified")
 
 
 if __name__ == "__main__":

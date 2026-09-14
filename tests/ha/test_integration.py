@@ -96,7 +96,7 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
     await hass.async_block_till_done()
     assert hass.states.get("light.bancada").state == "on"
     assert manager.snapshot()["modules"][mid]["channels"][0]["state"] == "ON"
-    await manager.operate(mid, 1, "OFF", True)
+    await manager.operate(mid, 1, "OFF", True, manager.state["revision"])
     command = [c for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]][0]
     assert command.args[:4] == ("/Cabeado/relay00123/in/r1", "OFF", 0, False)
     assert hass.states.get("light.bancada").state == "on"  # non-optimistic
