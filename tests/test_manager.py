@@ -269,13 +269,14 @@ async def test_permanent_removal_and_serial_lock():
     data = deepcopy(manager.state["modules"][mid])
     data["serial"] = "99999"
     data["channel_count"] = 32
-    await manager.mutate("save", 2, data)
+    with pytest.raises(ManagerError, match="fixos"):
+        await manager.mutate("save", 2, data)
     assert manager.state["modules"][mid]["serial"] == "00123"
     assert manager.state["modules"][mid]["channel_count"] == 8
-    await manager.mutate("prepare_remove", 3, {}, True)
+    await manager.mutate("prepare_remove", 2, {}, True)
     assert manager.state["prepared_removal"] and not port.retained
     with pytest.raises(ManagerError, match="remoção"):
-        await manager.mutate("create", 4, {"serial": "7", "channel_count": 8})
+        await manager.mutate("create", 3, {"serial": "7", "channel_count": 8})
 
 
 async def test_storage_rejects_unsafe_cleanups_and_versions():

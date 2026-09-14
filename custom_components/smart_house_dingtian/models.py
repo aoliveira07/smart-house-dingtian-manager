@@ -84,6 +84,11 @@ def new_module(state, data):
 
 
 def update_module(module, data):
+    for field in ("serial", "channel_count", "technical_id", "mqtt_prefix"):
+        if field in data and data[field] != module[field]:
+            raise ManagerError(
+                "Serial, capacidade e identidade ficam fixos após o cadastro. Cadastre outro módulo."
+            )
     result = deepcopy(module)
     result["display_name"] = name(data.get("display_name"))
     items = data.get("channels")

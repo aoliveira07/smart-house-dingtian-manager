@@ -67,7 +67,7 @@ python scripts/package.py
 Em Linux com Python 3.14.2+:
 
 ```sh
-python -m pip install pytest-homeassistant-custom-component==0.13.365
+python -m pip install -r requirements-ha-test.txt
 pytest tests/ha -v
 ```
 

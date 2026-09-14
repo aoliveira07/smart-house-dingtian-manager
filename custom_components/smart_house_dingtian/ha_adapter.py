@@ -74,6 +74,22 @@ class HAPort:
                 for domain in ("light", "switch"):
                     entry = self.registry_entry(module, c, domain)
                     if entry:
+                        pending_creation = next(
+                            (
+                                r
+                                for r in state["owned_topics"].values()
+                                if r["module_uuid"] == module["module_uuid"]
+                                and r["number"] == c["number"]
+                                and r["entity_type"] == domain
+                                and r.get("applied") is None
+                            ),
+                            None,
+                        )
+                        if (
+                            pending_creation
+                            and entry.entity_id != pending_creation["payload"]["default_entity_id"]
+                        ):
+                            continue  # Never silently adopt a suffix assigned in a failed creation.
                         c["last_entity_ids"][domain] = entry.entity_id
                         if (
                             domain == c["entity_type"]
