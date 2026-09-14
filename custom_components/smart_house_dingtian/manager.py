@@ -45,7 +45,7 @@ class Manager:
 
     async def mutate(self, action, revision, data, confirmed=False):
         async with self.lock:
-            if revision != self.state["revision"]:
+            if type(revision) is not int or revision != self.state["revision"]:
                 raise ManagerError("Cadastro alterado em outra aba. Recarregue antes de salvar.")
             if self.state["prepared_removal"]:
                 raise ManagerError("Gerenciador preparado para remoção; remova a integração.")

@@ -137,6 +137,7 @@ async def lifecycle(app):
                 port._connected = False
                 port.received.clear()
                 port.tests.disconnected()
+                await port.client.close()
                 delay = min(delay * 2, 30)
             await asyncio.sleep(delay)
 

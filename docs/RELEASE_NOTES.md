@@ -1,11 +1,13 @@
-# Dingtian Manager 0.1.0b1
+# Smart House Dingtian Manager 1.0.0 — aplicativo/add-on
 
-Primeira beta instalável para Home Assistant Core 2026.9.2+. MQTT existente, módulos 8/16/32, visão geral e página individual dos canais, light/switch por saída, nomes editáveis e IDs estáveis.
+Esta versão reúne a entrega principal e o Adendo 01 na distribuição por **Aplicativos** do Home Assistant.
 
-Os pacotes incluem frontend pronto para uso. `smart_house_dingtian.zip` é o asset do HACS; `smart-house-dingtian-manager-manual.zip` contém a estrutura `custom_components/` para extração na pasta de configuração.
+Adicione `https://github.com/aoliveira07/smart-house-dingtian-manager` em **Instalar aplicativo → ⋮ → Repositórios**, instale **Smart House Dingtian Manager**, inicie e abra a interface Web. Requer Core 2026.9.2+, Supervisor e MQTT configurado. Suporta amd64/aarch64.
 
-A publicação exige sucesso dos testes do núcleo, testes do Web Component, integração no HA 2026.9.2 com MQTT simulado, lint, validação do pacote e HACS, no mesmo commit. Consulte o workflow **Validate integration** e `docs/TEST_RESULTS.md`.
+Inclui teste explícito em cada linha de canal antes do cadastro operacional, sem criar entidade provisória, sem enviar comandos ao salvar e com confirmação pelo estado recebido. Cadastro persistente em `/data`; exportação/importação preservando identidades. Não depende de HACS.
 
-**Homologação física pendente.** Não foi acessado o HA/broker da residência nem acionada qualquer carga. Faça backup, retire somente o legado Dingtian correspondente e habilite primeiro um único canal de carga não crítica. Leia `docs/CLEAN_START.md` e `docs/TEST_PLAN.md`.
+**Pacote principal:** `smart-house-dingtian-manager-addon-1.0.0.zip` (alternativa para instalação local em `/addons`). Os outros dois ZIPs são da integração de compatibilidade, não necessários para instalar o aplicativo.
 
-Limites: sem importação automática, pulso/intertravamento, dimmer ou troca de hardware. Troca de domínio pode afetar automações/cenas/histórico. Remoção exige preparação online no painel; remoção forçada/offline pode deixar Discovery retido e exige recuperação do diário/backup.
+Testes automatizados de núcleo, interface, backend e APIs reais do HA com MQTT simulado; builds e inicialização em contêineres amd64/arm64. Detalhes e limitações em `docs/TEST_RESULTS.md` e na CI abaixo.
+
+**Homologação física pendente.** Nenhum acesso à casa ou acionamento real foi feito nesta implementação. A release é marcada como pré-release até a homologação, mantendo o número 1.0.0 solicitado. A tag beta anterior permanece no histórico.

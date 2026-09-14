@@ -30,7 +30,6 @@ class HAClient:
         self.session = ClientSession(timeout=ClientTimeout(total=20))
         self.ws = await self.session.ws_connect(
             self.base.replace("http://", "ws://").replace("https://", "wss://") + "/websocket",
-            heartbeat=15,
             max_msg_size=32 * 1024 * 1024,
         )
         if (await self.ws.receive_json())["type"] != "auth_required":

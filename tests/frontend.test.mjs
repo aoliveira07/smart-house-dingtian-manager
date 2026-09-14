@@ -50,3 +50,42 @@ test('type change requires confirmation before any API mutation',async()=>{
   node.draft.channels[0].entity_type='switch';node.changed();window.confirm=()=>false;await node.save();
   assert.equal(requests.filter(r=>r.action==='save').length,0);
 });
+
+test('test control precedes name and works before use, preserving unsaved draft',async()=>{
+  const m=moduleData(1,8);m.availability='online';m.channels[6].display_name='';m.channels[6].entity_type='';
+  const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
+  const row=node.shadowRoot.querySelectorAll('.channel')[6];
+  assert.equal(row.children[1].dataset.test,'7');assert.equal(row.children[2].className,'channel-name');
+  assert.match(row.textContent,/Estado recebido: Desconhecido/);
+  assert.equal(row.querySelectorAll('[role=switch]').length,0);
+  const input=row.querySelector('[aria-label="Nome R7"]');input.value='Rascunho';input.dispatchEvent(new Event('input'));
+  window.confirm=()=>true;
+  await node.testRelay(m,m.channels[6],'ON');
+  const commands=requests.filter(r=>r.action==='operate');assert.equal(commands.length,1);
+  assert.deepEqual(commands[0].data,{module_uuid:m.module_uuid,number:7,payload:'ON'});
+  assert.equal(node.draft.channels[6].display_name,'Rascunho');assert.equal(node.draft.channels[6].enabled,false);
+  assert.equal(requests.filter(r=>r.action==='save').length,0);
+});
+
+test('pending and unavailable test buttons are disabled without invented OFF',async()=>{
+  const m=moduleData(1,16);const {node,data,requests}=await panel([m]);node.navigate(m.module_uuid);
+  let control=node.shadowRoot.querySelector('[data-test="1"]');
+  assert.equal(control.querySelectorAll('button:disabled').length,2);
+  data.modules[m.module_uuid].availability='online';data.modules[m.module_uuid].channels[0].test={status:'pending',desired:'ON'};
+  await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
+  assert.equal(control.querySelectorAll('button:disabled').length,2);assert.match(control.textContent,/aguardando retorno/);
+  data.modules[m.module_uuid].channels[0].state='ON';data.modules[m.module_uuid].channels[0].test={status:'confirmed',message:'Estado recebido do módulo.'};
+  await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
+  assert.equal(control.querySelector('[role=switch]').getAttribute('aria-checked'),'true');
+  assert.match(control.textContent,/Ligado, mesmo sem uso cadastrado/);
+  window.confirm=()=>false;node.navigate('');assert.equal(node.active,m.module_uuid);
+  assert.equal(requests.filter(r=>r.action==='operate').length,0);
+});
+
+test('Ingress routes retain the application base URL',async()=>{
+  const m=moduleData(1,32);const {node}=await panel([m]);
+  window.history.replaceState(null,'','/api/hassio_ingress/opaque-session/');node.ingress=true;
+  node.navigate(m.module_uuid);assert.equal(window.location.pathname,'/api/hassio_ingress/opaque-session/');
+  assert.equal(window.location.hash,`#/modules/${m.module_uuid}`);assert.equal(node.shadowRoot.querySelectorAll('[data-test]').length,32);
+  node.navigate('');assert.equal(window.location.hash,'#/');
+});

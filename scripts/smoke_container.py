@@ -1,5 +1,6 @@
 """Boot and restart the built add-on without a Supervisor or real MQTT broker."""
 
+import http.client
 import json
 import subprocess
 import time
@@ -28,7 +29,7 @@ try:
         except urllib.error.HTTPError as exc:
             assert exc.code == 403
             break
-        except urllib.error.URLError:
+        except (urllib.error.URLError, OSError, http.client.HTTPException):
             time.sleep(1)
     else:
         raise AssertionError("Container did not start")

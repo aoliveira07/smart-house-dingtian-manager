@@ -1,76 +1,63 @@
-# Smart House Dingtian Manager
+# Smart House Dingtian Manager — 1.0.0
 
-Integração personalizada para Home Assistant com **visão geral dos módulos** e **página independente de canais de cada módulo**. Suporta capacidades de **8, 16 e 32 saídas**. Cada canal pode ficar não utilizado, ser uma luz liga/desliga ou um interruptor liga/desliga.
+Aplicativo/add-on para **Home Assistant OS com Supervisor**, instalado pela tela **Aplicativos**. Organiza módulos Dingtian de **8, 16 ou 32 saídas**, com uma página por módulo e teste individual de relé antes de definir nome, tipo ou uso.
 
-**Beta `0.1.0b1`: homologação física pendente.** Começa sem equipamentos. Não importa configurações antigas automaticamente. O painel é pt-BR, responsivo, compatível com temas claro/escuro e acompanha o pacote, sem CDN, Node ou servidor externo em produção.
+**1.0.0 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
 
-## Funcionamento
+## Instalar como aplicativo
 
-Configure uma vez a integração MQTT do próprio HA. O gerenciador reutiliza sua conexão e seu prefixo Discovery, sem pedir credenciais. Os canais utilizados tornam-se entidades das plataformas MQTT `light` e `switch`, agrupadas por módulo. A administração fica em **Dingtian Manager**, na barra lateral; as entidades aparecem na integração **MQTT**.
+1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
+2. No menu **⋮ → Repositórios**, adicione:
+   `https://github.com/aoliveira07/smart-house-dingtian-manager`
+3. Atualize a loja, procure **Smart House Dingtian Manager** e clique em **Instalar**.
+4. Clique em **Iniciar**, habilite **Mostrar na barra lateral** e abra a interface Web.
 
-1. Em **Módulos**, cadastre serial, capacidade e nome.
-2. Abra **CabeadoN**, edite somente os canais daquele módulo e salve o lote.
-3. Use os detalhes de um canal para consultar tópicos, ID efetivo e comandos individuais explicitamente confirmados.
+O Supervisor compila o aplicativo na instalação. São suportadas as arquiteturas `amd64` e `aarch64`, com **Home Assistant Core 2026.9.2 ou superior**. É necessário ter **MQTT configurado em Dispositivos e serviços**, com Discovery habilitado. Não é necessário instalar HACS, copiar componentes, editar YAML ou informar senhas MQTT ao aplicativo.
 
-`Cabeado1` é a identidade permanente do módulo; `Cabeado1-r7` é o `unique_id` da saída física R7. Renomear o ambiente não muda esses IDs. O ID inicial sugerido é `light.cabeado1_r7` ou `switch.cabeado1_r7`; a aplicação consulta o ID efetivamente registrado no HA. Trocar light/switch muda o domínio e pode exigir correções em automações, cenas e dashboards.
+O aplicativo usa a conexão MQTT existente do Home Assistant pela API interna do Supervisor. Lê o prefixo Discovery efetivamente configurado no HA; não instala outro broker. O painel abre por Ingress, restrito a administradores. Credenciais nunca são enviadas ao navegador.
 
-## Instalação
+[Instalação, atualização e migração](dingtian_manager/DOCS.md) · [Pacotes e releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases) · [Evidências dos testes](docs/TEST_RESULTS.md)
 
-Alvo: **Home Assistant Core 2026.9.2 / Python 3.14.2 ou superior**. Veja [evidências e limites dos testes](docs/TEST_RESULTS.md) antes do piloto. A versão instalada na sua residência não foi consultada.
+## Cadastrar e identificar saídas
 
-**HACS:** adicione `https://github.com/aoliveira07/smart-house-dingtian-manager` como repositório personalizado, categoria **Integração**. Habilite versões beta/pré-release, baixe a beta e reinicie o HA. Não há inclusão no catálogo padrão do HACS.
+1. Cadastre o serial e a capacidade do módulo. O nome inicial pode ser provisório.
+2. Abra sua página **CabeadoN**. Cada linha começa com a identificação física **R1, R2…** e **Testar relé — comando real**.
+3. Quando o módulo estiver online, teste deliberadamente uma saída e observe a carga localmente. Com estado desconhecido, escolha explicitamente **Ligar** ou **Desligar**.
+4. Preencha o nome, escolha **Luz** ou **Interruptor**, marque **Usar canal** e salve.
 
-**Manual:** baixe `smart-house-dingtian-manager-manual.zip` na [página de releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases). Extraia o diretório `custom_components/smart_house_dingtian` dentro da pasta de configuração do HA. Reinicie.
+O teste funciona mesmo sem entidade, sem nome definitivo, sem tipo escolhido ou com uso desmarcado. Não cria Discovery nem modifica o formulário. Canais não utilizados continuam visíveis na administração. As entidades operacionais são criadas somente ao salvar canais utilizados.
 
-Nos dois casos, em **Configurações → Dispositivos e serviços → Adicionar integração**, procure **Smart House Dingtian Manager**. Abra o painel pela barra lateral ou pelo link em Configurar. Não acrescente `panel_custom:` nem recursos JavaScript ao YAML.
+O estado exibido vem das mensagens do equipamento. A publicação não confirma a ação física: o painel aguarda retorno, limita comandos repetidos e informa timeout sem reenviar. Broker desconectado, módulo offline ou disponibilidade desconhecida bloqueiam comandos. **Cancelar, salvar, navegar ou reiniciar não envia ON/OFF e não desfaz um teste anterior.** Não há teste coletivo, pulso ou OFF automático.
 
-O arquivo `smart_house_dingtian.zip` é o asset do HACS e contém diretamente o conteúdo da integração. Para instalá-lo manualmente, extraia-o **dentro** de `config/custom_components/smart_house_dingtian/`.
+## Identidade e MQTT
 
-Leia [instalação e atualização](docs/INSTALLATION.md) e [retirada restrita do legado / reversão](docs/CLEAN_START.md) antes de habilitar o primeiro canal.
+`Cabeado1` identifica permanentemente o módulo; `Cabeado1-r7` identifica sua saída física R7. Os IDs iniciais são `light.cabeado1_r7` ou `switch.cabeado1_r7`. Renomeações preservam o ID efetivo do registro do HA. Trocar entre light/switch muda o domínio e exige revisar referências de automações.
 
-## Contrato MQTT
-
-| Item | Valor |
+| Item | Contrato |
 |---|---|
-| Base | `/Cabeado/relay<SERIAL>` — serial é texto, preservando zeros |
-| Estado | `/Cabeado/relay<SERIAL>/out/r<N>` |
 | Comando | `/Cabeado/relay<SERIAL>/in/r<N>` |
-| Disponibilidade | `/Cabeado/relay<SERIAL>/out/lwt_availability` |
-| Liga / desliga | `ON` / `OFF` |
-| Disponível / indisponível | `online` / `offline` |
-| Comandos | QoS 0, não retidos, sem fila própria/repetição |
-| Configs Discovery | QoS 1, retidos, namespace exclusivo do gerenciador |
+| Estado | `/Cabeado/relay<SERIAL>/out/r<N>` |
+| Disponibilidade | `/Cabeado/relay<SERIAL>/out/lwt_availability` — `online` / `offline` |
+| Payload de comando | `ON` ou `OFF`, QoS **0**, retain **false** |
+| Discovery | Prefixo lido do HA; namespace exclusivo por gerenciador/módulo; QoS 1, retain true |
+| Serial | Texto somente com dígitos; preserva zeros iniciais |
 
-Cadastrar, salvar, renomear, remover e reconciliar **não enviam comandos aos relés**. Desativar o cadastro não desliga a carga. Sem estado recebido, o painel aguarda informação; não fabrica `OFF` nem aciona uma saída para consultar seu estado.
+Inventário, UUIDs, sequência de módulos e diário Discovery ficam em `/data/inventory.json`, persistente nas atualizações e incluído nos backups do aplicativo. Versões desconhecidas ou arquivos corrompidos bloqueiam a inicialização; nunca geram um cadastro vazio silenciosamente.
 
-## Segurança e recuperação
+## Atualização e compatibilidade
 
-Todas as chamadas administrativas exigem administrador no backend. O lote inteiro é validado antes do salvamento; revisões impedem sobrescrita de duas abas. O gerenciador guarda a intenção e a propriedade de cada tópico antes de publicar. Uma falha mantém o status pendente para nova tentativa. A remoção exige broker online e confirmação de exclusão da entidade anterior antes da criação em outro domínio.
+Atualize pela própria tela do aplicativo. A antiga integração continua no código para compatibilidade/migração, mas **não deve permanecer ativa simultaneamente com o aplicativo**. O backend bloqueia alterações nessa condição. A migração é explícita, importa o cadastro preservando IDs e aceita somente destino vazio; siga [DOCS.md](dingtian_manager/DOCS.md).
 
-Antes de desinstalar, use **Módulos → Manutenção → Preparar remoção permanente**, com broker online, e aguarde o fim das pendências. Depois remova a integração. Recarregar/desabilitar temporariamente não remove entidades MQTT. Remoção forçada/offline exige a recuperação descrita em [Solução de problemas](docs/TROUBLESHOOTING.md).
-
-Não edite `.storage` nem apague globalmente tópicos MQTT. Backups e configurações reais não pertencem a este repositório.
+O arquivo `smart-house-dingtian-manager-addon-1.0.0.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
 
 ## Desenvolvimento
 
-```sh
-python -m pip install pytest pytest-asyncio ruff
-pytest tests/test_manager.py -q
-ruff check .
-ruff format --check .
-npm ci
-npm run build
-npm test
-python scripts/package.py
-```
+- `frontend/panel.js`: interface compartilhada, sem dependências de produção/CDN.
+- `custom_components/smart_house_dingtian/`: núcleo canônico e adaptador da integração anterior.
+- `dingtian_manager/`: contexto Docker independente, servidor Ingress e adaptador remoto.
+- `python scripts/build_addon.py`: copia somente o núcleo puro e o frontend para o contexto Docker.
+- `npm ci && npm run build && npm test`: build e testes do painel.
+- `pytest tests/test_manager.py tests/test_addon.py`: testes isolados de transações, comandos e aplicativo.
+- `pytest tests/ha`: testes em HA real 2026.9.2, com transporte MQTT simulado, executados em Linux/Python 3.14.
 
-Em Linux com Python 3.14.2+:
-
-```sh
-python -m pip install -r requirements-ha-test.txt
-pytest tests/ha -v
-```
-
-O frontend é um Web Component JavaScript nativo. O build verifica e copia o módulo distribuível; não há bibliotecas de interface para baixar em runtime. `happy-dom` é usado somente nos testes.
-
-[Arquitetura](docs/ARCHITECTURE.md) · [Plano e checklist físico](docs/TEST_PLAN.md) · [Resultados](docs/TEST_RESULTS.md) · [Changelog](CHANGELOG.md)
+A CI verifica o código gerado e constrói/inicia contêineres amd64 e arm64. Nenhum teste usa a residência. Consulte [arquitetura](docs/ARCHITECTURE.md) e [plano de testes](docs/TEST_PLAN.md).

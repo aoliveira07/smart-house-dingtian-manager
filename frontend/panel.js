@@ -76,7 +76,7 @@ export class DingtianPanel extends HTMLElement {
   routePath(mid) {return this.ingress ? (mid?`#/modules/${mid}`:'#/') : (mid?`${ROOT}/modules/${mid}`:ROOT);}
   updateStates() {
     const current = this.data?.modules[this.active];
-    if (!current) return;
+    if (!current) {if(!this.active&&!this.shadowRoot.querySelector('dialog'))this.render();return;}
     for (const c of current.channels) {
       const node = this.shadowRoot.querySelector(`[data-test="${c.number}"]`);
       if(node) this.fillTest(node,current,c);

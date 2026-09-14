@@ -119,6 +119,8 @@ def update_module(module, data):
 
 def validate_storage(data):
     """Fail closed on unsupported/corrupt storage; never silently reset identities."""
+    if not isinstance(data, dict):
+        raise ManagerError("Arquivo de cadastro inválido.")
     if data.get("schema_version") != 1:
         raise ManagerError("Versão de armazenamento não suportada. Restaure o backup compatível.")
     if not re.fullmatch(r"[a-f0-9]{32}", data["manager_uuid"]):
