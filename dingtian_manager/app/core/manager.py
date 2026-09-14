@@ -4,7 +4,7 @@ import asyncio
 import json
 from copy import deepcopy
 
-from .models import ManagerError, initial, new_module, update_module, validate_storage
+from .models import ManagerError, initial, new_module, unique_module_name, update_module, validate_storage
 from .mqtt_discovery import discovery
 
 
@@ -58,6 +58,7 @@ class Manager:
             destructive = False
             if action == "create":
                 module = new_module(desired, data)
+                unique_module_name(desired, module)
                 desired["modules"][module["module_uuid"]] = module
                 desired["next_module_number"] += 1
             elif action == "prepare_remove":
@@ -75,6 +76,8 @@ class Manager:
                     module["deleted"] = True
                 elif action == "save":
                     updated = update_module(module, data)
+                    if updated["display_name"] != module["display_name"]:
+                        unique_module_name(desired, updated)
                     destructive = any(
                         a["enabled"] and (not b["enabled"] or a["entity_type"] != b["entity_type"])
                         for a, b in zip(module["channels"], updated["channels"], strict=True)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+- Corrige os nomes das entidades no HA: usa apenas o nome do canal, sem prefixo do módulo.
+- Corrige automaticamente canais existentes sem nome personalizado, inclusive nomes salvos antes de habilitar. Preserva nomes personalizados no HA, identidades e cômodos.
+- Impede criar ou renomear módulos com nomes repetidos, ignorando maiúsculas e espaços repetidos.
+
 ## 1.1.1
 
 - Recuperação de rascunhos por aba também em acesso HTTP pelo IP local, sem depender de APIs restritas a HTTPS.

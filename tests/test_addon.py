@@ -151,6 +151,31 @@ async def test_missing_area_rejected_without_persisting_or_publishing(tmp_path):
     assert not client.published
 
 
+async def test_simple_names_before_enable_existing_repair_and_type_change(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(display_name="Balizador casal", area_id="sala")
+    await manager.mutate("save", 1, module)
+    module["channels"][0]["enabled"] = True
+    await manager.mutate("save", 2, module)
+    entry = client.entities["light.cabeado1_r1"]
+    assert entry["name"] == "Balizador casal"
+    entry["name"] = None  # Existing entity from an older release.
+    await port.registries()
+    await manager.reconcile()
+    assert entry["name"] == "Balizador casal" and entry["area_id"] == "sala"
+    entry["name"] = "Nome escolhido no HA"
+    await port.registries()
+    await manager.reconcile()
+    assert entry["name"] == "Nome escolhido no HA"
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["entity_type"] = "switch"
+    await manager.mutate("save", 3, module, True)
+    assert client.entities["switch.cabeado1_r1"]["name"] == "Nome escolhido no HA"
+    assert client.entities["switch.cabeado1_r1"]["unique_id"] == entry["unique_id"]
+    assert not any("/in/" in p[0] for p in client.published)
+
+
 async def test_area_failure_is_journaled_and_reconciled(tmp_path):
     client, port, manager, mid = await setup(tmp_path)
     original = client.call

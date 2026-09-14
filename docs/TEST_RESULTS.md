@@ -1,3 +1,7 @@
+# Atualização 1.1.2 — nomes das entidades e módulos
+
+Validação local: 46 testes do motor/aplicativo e 15 da interface aprovados; Ruff e geração dos arquivos aprovados. Regressões cobrem nome antes de habilitar, reparo de entidades existentes, nome externo preservado, troca de tipo e duplicidade de módulos sem persistência parcial. Teste com APIs reais do HA verifica friendly_name sem prefixo após habilitar e após reparar registro antigo; execução na CI antes da publicação.
+
 # Atualização 1.1.1 — rascunhos em acesso local
 
 Teste adicional verifica identidade própria de rascunho para cada aba e recuperação após recarga, sem usar `crypto.randomUUID` (restrito a contextos seguros). Total: **41 testes de núcleo/aplicativo + 15 de frontend + 5 de HA = 61**, além dos builds/smoke tests de contêiner.

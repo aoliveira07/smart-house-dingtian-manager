@@ -189,7 +189,7 @@ class RemotePort:
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.1.1"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.1.2"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -232,6 +232,24 @@ class RemotePort:
         return changes
 
     async def apply_names(self, changes):
+        changes = list(changes)
+        # HA automatically prefixes device names when the entity has no name override.
+        # Repair existing entities and initialize newly enabled/recreated channels alike.
+        pending_names = {(c["module_uuid"], c.get("number")) for c in changes if "name" in c}
+        for module in self.manager.state["modules"].values():
+            if module["deleted"]:
+                continue
+            for channel in module["channels"]:
+                entry = self.registry_entry(module, channel)
+                if channel["enabled"] and entry and entry.get("name") is None:
+                    if (module["module_uuid"], channel["number"]) not in pending_names:
+                        changes.append(
+                            {
+                                "module_uuid": module["module_uuid"],
+                                "number": channel["number"],
+                                "name": channel["display_name"],
+                            }
+                        )
         for change in changes:
             module = self.manager.state["modules"][change["module_uuid"]]
             if "number" in change:

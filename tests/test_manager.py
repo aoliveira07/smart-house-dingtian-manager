@@ -85,6 +85,29 @@ async def fresh(count=8, serial="00123"):
     return manager, port, mid
 
 
+@pytest.mark.parametrize("duplicate", ["Cabeado 1", "cABEADO 1", "  Cabeado   1  ", "Ｃabeado 1"])
+async def test_duplicate_module_names_rejected_atomically(duplicate):
+    manager, port, mid = await fresh()
+    before = deepcopy(manager.state)
+    with pytest.raises(ManagerError, match="outro módulo"):
+        await manager.mutate("create", 1, {"serial": "456", "channel_count": 8, "display_name": duplicate})
+    assert manager.state == before and port.stored == before
+    await manager.mutate("create", 1, {"serial": "456", "channel_count": 8})
+    other = next(m for m in manager.state["modules"].values() if m["module_uuid"] != mid)
+    changed = deepcopy(other)
+    changed["display_name"] = duplicate
+    before = deepcopy(manager.state)
+    with pytest.raises(ManagerError, match="outro módulo"):
+        await manager.mutate("save", 2, changed)
+    assert manager.state == before and port.stored == before
+    assert not port.published
+    # Keeping one's own name and renaming to a distinct name both remain valid.
+    await manager.mutate("save", 2, deepcopy(other))
+    changed["display_name"] = "Quadro cozinha"
+    await manager.mutate("save", 3, changed)
+    assert manager.state["modules"][other["module_uuid"]]["display_name"] == "Quadro cozinha"
+
+
 async def save(manager, mid, changes, confirmed=False):
     data = deepcopy(manager.state["modules"][mid])
     for n, change in changes.items():

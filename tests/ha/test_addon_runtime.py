@@ -60,9 +60,18 @@ async def test_standalone_application_real_ha_apis(
         module = deepcopy(manager.state["modules"][mid])
         kitchen = ar.async_get(hass).async_create("Cozinha")
         module["channels"][6].update(
-            enabled=True, display_name="Bancada", entity_type="light", area_id=kitchen.id
+            enabled=False, display_name="Bancada", entity_type="light", area_id=kitchen.id
         )
         await manager.mutate("save", 1, module)
+        module["channels"][6]["enabled"] = True
+        await manager.mutate("save", 2, module)
+        await hass.async_block_till_done()
+        assert hass.states.get("light.cabeado1_r7").attributes["friendly_name"] == "Bancada"
+        er.async_get(hass).async_update_entity("light.cabeado1_r7", name=None)
+        await port.registries()
+        await manager.reconcile()
+        await hass.async_block_till_done()
+        assert hass.states.get("light.cabeado1_r7").attributes["friendly_name"] == "Bancada"
         assert manager.state["error"] is None
         assert er.async_get(hass).async_get("light.cabeado1_r7").unique_id == "Cabeado1-r7"
         assert er.async_get(hass).async_get("light.cabeado1_r7").area_id == kitchen.id
@@ -77,11 +86,11 @@ async def test_standalone_application_real_ha_apis(
         assert snapshot["channels"][6]["display_name"] == "Nome externo"
         snapshot["channels"][6]["display_name"] = "Novo nome"
         snapshot["channels"][6]["area_id"] = None
-        await manager.mutate("save", 2, snapshot)
+        await manager.mutate("save", 3, snapshot)
         assert manager.state["error"] is None
         assert registry.async_get("light.minha_bancada").name == "Novo nome"
         assert registry.async_get("light.minha_bancada").area_id is None
-        await manager.mutate("delete", 3, {"module_uuid": mid}, True)
+        await manager.mutate("delete", 4, {"module_uuid": mid}, True)
         assert manager.state["error"] is None
         assert not registry.async_get("light.minha_bancada")
         commands = [c.args[:4] for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]]

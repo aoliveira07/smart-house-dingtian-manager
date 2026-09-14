@@ -158,6 +158,22 @@ class HAPort:
         return changes
 
     async def apply_names(self, changes):
+        changes = list(changes)
+        pending_names = {(c["module_uuid"], c.get("number")) for c in changes if "name" in c}
+        for module in self.manager.state["modules"].values():
+            if module["deleted"]:
+                continue
+            for channel in module["channels"]:
+                entry = self.registry_entry(module, channel)
+                if channel["enabled"] and entry and entry.name is None:
+                    if (module["module_uuid"], channel["number"]) not in pending_names:
+                        changes.append(
+                            {
+                                "module_uuid": module["module_uuid"],
+                                "number": channel["number"],
+                                "name": channel["display_name"],
+                            }
+                        )
         for change in changes:
             module = self.manager.state["modules"][change["module_uuid"]]
             if "number" in change:

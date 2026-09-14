@@ -1,6 +1,7 @@
 """Validated, JSON-serializable inventory. No Home Assistant or network dependency."""
 
 import re
+import unicodedata
 from copy import deepcopy
 from typing import TypedDict
 from uuid import uuid4
@@ -32,6 +33,19 @@ def serial(value):
     if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,64}", value):
         raise ManagerError("Serial deve ser texto com 1 a 64 dígitos, sem espaços.")
     return value
+
+
+def unique_module_name(state, module):
+    """Compare user-visible names without case, spacing or Unicode-form differences."""
+
+    def normalized(value):
+        return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+    wanted = normalized(module["display_name"])
+    for other in state["modules"].values():
+        if other["module_uuid"] != module["module_uuid"] and not other["deleted"]:
+            if normalized(other["display_name"]) == wanted:
+                raise ManagerError("Já existe outro módulo com esse nome. Escolha um nome diferente.")
 
 
 def capacity(value):
