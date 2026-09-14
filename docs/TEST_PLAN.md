@@ -13,14 +13,14 @@ Os testes automatizados usam dados fictícios e uma fronteira MQTT isolada. Nenh
 | REC-01/02/03 | Restart, falhas injetadas, diário, tombstone e limpeza seletiva |
 | SAFE-01/02/03/04 | Escopo de limpeza, usuário não admin, XSS/lote inválido e concorrência |
 | SRC-01 | Inventário inicial vazio; referências privadas fora do repositório |
-| PKG-01/02 | ZIP verificado; setup/reload do HA em CI; instalação HACS/manual e atualização no piloto |
+| PKG-01/02 | ZIP verificado; setup/reload do HA em CI; build/start amd64 e arm64; instalação pela loja e atualização no piloto |
 
 ## Checklist físico — executar pelo administrador
 
 - [ ] Backup do HA e reversão disponíveis; versão do HA compatível.
 - [ ] Somente legado Dingtian do piloto removido; outros MQTT preservados.
 - [ ] Serial e capacidade conferidos fisicamente; um canal não crítico identificado.
-- [ ] Instalação manual ou HACS concluída; painel automático, cadastro vazio.
+- [ ] Instalação pela loja de Aplicativos concluída; Ingress administrativo, cadastro vazio.
 - [ ] Páginas de módulos isoladas; teclado, celular, rotação, Voltar e reload utilizáveis.
 - [ ] Habilitar R1 e/ou R7 mantém posição física; tipos e IDs corretos.
 - [ ] Salvar/renomear não gera publicações em `/in/r<N>` (captura MQTT controlada).
@@ -30,7 +30,22 @@ Os testes automatizados usam dados fictícios e uma fronteira MQTT isolada. Nenh
 - [ ] Renomear pelo HA fora do painel é refletido; restart preserva personalização e IDs.
 - [ ] Desativar/reativar e trocar light/switch com backup, sem duas entidades operacionais; conferir cenas/automações.
 - [ ] Reiniciar HA e broker; retained configs não recriam entidades removidas.
-- [ ] Atualizar a beta e reiniciar; inventário, sequência e UUIDs preservados.
+- [ ] Atualizar o aplicativo e reiniciar; inventário, sequência e UUIDs preservados.
 - [ ] Preparação para remoção e reversão verificadas antes de ampliar o piloto.
 
 Não há botão de ligar todos, importação automática, pulso, intertravamento, entradas digitais, dimmer, persianas ou troca de firmware nesta V1. Nenhuma instalação é considerada homologada fisicamente por testes de software.
+
+## Adendo 01 incluído em 1.0.0
+
+| Critérios | Verificação |
+|---|---|
+| A01-01/02/03/04/05 | Páginas por capacidade; teste de R7 sem nome/tipo/uso; comando exato; entidade somente após salvar |
+| A01-06/07/08 | Cadastro sem comandos; estado recebido separado; desconhecido, mensagens retidas e retorno de outro canal |
+| A01-09/10/11 | Offline/LWT desconhecido, admin/Ingress, canal inválido/tópico arbitrário, repetição, timeout e reconexão |
+| A01-12 | Restart e importação preservam schema/UUIDs/IDs; atualização interativa do Supervisor no piloto |
+| A01-13 | DOM acessível e inspeção visual 390×844; teclado e toque no dispositivo do usuário no piloto |
+
+- [ ] Testar uma saída não utilizada antes de preencher o nome, observando localmente a carga.
+- [ ] Conferir que Cancelar não desfaz o teste e que não há OFF automático ao sair.
+- [ ] Observar aviso de canal não utilizado que reporta ON.
+- [ ] Conferir disponibilidade e timeout com equipamento real, sem teste coletivo.

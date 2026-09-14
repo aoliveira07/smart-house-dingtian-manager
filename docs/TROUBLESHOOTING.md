@@ -1,3 +1,7 @@
+# Aplicativo 1.0.0
+
+Consulte primeiro [instalação e falhas do aplicativo](../dingtian_manager/DOCS.md). As orientações abaixo são da integração de compatibilidade anterior e só se aplicam a ela.
+
 # Solução de problemas
 
 **MQTT ausente/Discovery desabilitado:** configure a integração MQTT existente e habilite Discovery nas suas opções. O gerenciador não solicita credenciais nem abre outra conexão.

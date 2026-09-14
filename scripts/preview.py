@@ -9,6 +9,12 @@ import '/panel.js';
 const data={revision:0,applied_revision:0,next_module_number:1,modules:{},broker_connected:true,error:null};
 let notify=()=>{};
 const component=document.querySelector('smart-house-dingtian-panel');
+if(new URLSearchParams(location.search).has('demo')){
+ const id='00000000000000000000000000000001';
+ data.modules[id]={module_uuid:id,technical_id:'Cabeado1',serial:'00123',channel_count:8,display_name:'Quadro de demonstração',used_count:1,availability:'online',channels:Array.from({length:8},(_,i)=>({number:i+1,enabled:i===0,entity_type:i===0?'light':'',display_name:i===0?'Iluminação da bancada':'',unique_id:`Cabeado1-r${i+1}`,last_entity_ids:{},entity_id:i===0?'light.cabeado1_r1':null,state:i===0?'OFF':i===6?'ON':'unknown',test:{},topics:{}}))};
+ data.next_module_number=2;component.ingress=true;location.hash=`/modules/${id}`;
+}
+
 component.hass={connection:{subscribeMessage:async cb=>{notify=cb;return()=>{};}},callWS:async m=>{
  if(m.action==='create'){
   const n=data.next_module_number++,id=crypto.randomUUID().replaceAll('-','');
