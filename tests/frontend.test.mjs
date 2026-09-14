@@ -43,7 +43,7 @@ test('navigation flushes latest text without manual save or relay operations',as
   await node.navigate(String(2).padStart(32,'0'));assert.equal(node.active,String(2).padStart(32,'0'));
   const save=requests.find(r=>r.action==='save');
   assert.equal(save.revision,1);assert.equal(save.data.channels.length,8);assert.equal(save.data.channels[0].display_name,'Cozinha');
-  assert.equal(requests.filter(r=>r.action==='operate').length,0);
+  assert.equal(requests.filter(r=>r.action==='command').length,0);
   assert.ok(!node.shadowRoot.textContent.includes('Salvar módulo'));
 });
 
@@ -56,7 +56,7 @@ test('type, area and usage automatically persist as configuration only',async()=
   }
   const use=node.shadowRoot.querySelector('[aria-label="R1 utilizado"]');use.checked=false;use.dispatchEvent(new Event('change'));await tick();
   const saves=requests.filter(r=>r.action==='save');assert.equal(saves.length,3);assert.equal(saves[1].data.channels[0].area_id,'cozinha');assert.equal(saves[2].data.channels[0].enabled,false);
-  assert.equal(requests.filter(r=>r.action==='operate').length,0);assert.equal(node.dirty,false);
+  assert.equal(requests.filter(r=>r.action==='command').length,0);assert.equal(node.dirty,false);
 });
 
 test('test control precedes name, unknown state is explicit, editing blocks real commands',async()=>{
@@ -64,26 +64,22 @@ test('test control precedes name, unknown state is explicit, editing blocks real
   const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
   const row=node.shadowRoot.querySelectorAll('.channel')[6];
   assert.equal(row.children[1].dataset.test,'7');assert.equal(row.children[2].className,'channel-name');
-  assert.ok(!row.textContent.includes('Estado recebido'));assert.match(row.textContent,/Estado desconhecido/);
+  assert.ok(!row.textContent.includes('Estado recebido'));assert.ok(!row.textContent.includes('Estado desconhecido'));
   assert.equal(row.querySelectorAll('[role=switch]').length,0);
   const input=row.querySelector('[aria-label="Nome R7"]');input.value='Rascunho';input.dispatchEvent(new Event('input'));
-  await node.testRelay(m,m.channels[6],'ON');assert.equal(requests.filter(r=>r.action==='operate').length,0);
+  await node.testRelay(m,m.channels[6],'ON');assert.equal(requests.filter(r=>r.action==='command').length,0);
   await node.save();assert.equal(node.dirty,false);assert.equal(node.draft.channels[6].display_name,'Rascunho');
 });
 
-test('pending and unavailable test buttons are disabled without invented OFF',async()=>{
-  const m=moduleData(1,16);const {node,data,requests}=await panel([m]);node.navigate(m.module_uuid);
-  let control=node.shadowRoot.querySelector('[data-test="1"]');
-  assert.equal(control.querySelectorAll('button:disabled').length,2);
-  data.modules[m.module_uuid].availability='online';data.modules[m.module_uuid].channels[0].test={status:'pending',desired:'ON'};
-  await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
-  assert.equal(control.querySelectorAll('button:disabled').length,2);assert.match(control.textContent,/aguardando retorno/);
-  data.modules[m.module_uuid].channels[0].state='ON';data.modules[m.module_uuid].channels[0].test={status:'confirmed',message:'Estado recebido do módulo.'};
-  await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
-  assert.equal(control.querySelector('[role=switch]').getAttribute('aria-checked'),'true');
-  assert.match(control.textContent,/Ligado, mesmo sem uso cadastrado/);
-  window.confirm=()=>false;node.navigate('');assert.equal(node.active,m.module_uuid);
-  assert.equal(requests.filter(r=>r.action==='operate').length,0);
+test('commands ignore reported state and pending feedback but require broker connection',async()=>{
+ const m=moduleData(1,8);m.channels[0].test={status:'pending'};
+ const {node,data,requests}=await panel([m]);await node.navigate(m.module_uuid);
+ let control=node.shadowRoot.querySelector('[data-test="1"]');
+ assert.equal(control.querySelectorAll('button:disabled').length,0);
+ assert.ok(!control.textContent.includes('aguardando'));
+ data.broker_connected=false;await node.load();control=node.shadowRoot.querySelector('[data-test="1"]');
+ assert.equal(control.querySelectorAll('button:disabled').length,2);
+ assert.equal(requests.filter(r=>r.action==='command').length,0);
 });
 
 test('Ingress routes retain the application base URL',async()=>{
@@ -94,25 +90,17 @@ test('Ingress routes retain the application base URL',async()=>{
   node.navigate('');assert.equal(window.location.hash,'#/');
 });
 
-test('toggle clicks send ON and OFF directly without confirmation or duplicate commands',async()=>{
-  const m=moduleData(1,8);m.availability='online';m.channels[0].state='OFF';
-  const {node,data,requests}=await panel([m]);node.navigate(m.module_uuid);
-  let confirmations=0;window.confirm=()=>{confirmations++;return false;};
-  const on=node.shadowRoot.querySelector('[data-test="1"] [role=switch]');
-  assert.equal(on.getAttribute('aria-checked'),'false');
-  on.click();on.click();await tick();
-  let commands=requests.filter(r=>r.action==='operate');
-  assert.equal(commands.length,1);assert.equal(commands[0].data.payload,'ON');
-  assert.equal(commands[0].data.number,1);assert.equal(commands[0].confirmed,true);
-  assert.equal(node.shadowRoot.querySelector('[data-test="1"] [role=switch]').getAttribute('aria-checked'),'false');
-  // Only equipment state changes the displayed toggle; the next click explicitly sends OFF.
-  data.modules[m.module_uuid].channels[0].state='ON';await node.load();
-  const off=node.shadowRoot.querySelector('[data-test="1"] [role=switch]');
-  assert.equal(off.getAttribute('aria-checked'),'true');off.click();await tick();
-  commands=requests.filter(r=>r.action==='operate');
-  assert.deepEqual(commands.map(r=>r.data.payload),['ON','OFF']);
-  assert.equal(confirmations,0);assert.equal(node.draft.channels[0].enabled,false);
-  assert.equal(requests.filter(r=>r.action==='save').length,0);
+test('explicit ON and OFF commands need no state feedback or confirmation',async()=>{
+ const m=moduleData(1,8);const {node,requests}=await panel([m]);await node.navigate(m.module_uuid);
+ window.confirm=()=>{throw new Error('No confirmation expected');};
+ const control=node.shadowRoot.querySelector('[data-test="1"]');
+ control.querySelector('button').click();control.querySelector('button').click();await tick();
+ assert.equal(requests.filter(r=>r.action==='command').length,1);
+ node.shadowRoot.querySelector('[data-test="1"] button+button').click();await tick();
+ const commands=requests.filter(r=>r.action==='command');assert.deepEqual(commands.map(c=>c.data.payload),['ON','OFF']);
+ assert.equal(node.shadowRoot.querySelector('[role=switch]'),null);
+ assert.ok(node.shadowRoot.querySelector('.channel').textContent.includes('Entrada 1'));
+ assert.ok(!node.shadowRoot.textContent.includes('Estado desconhecido'));
 });
 
 test('slow saves serialize edits, preserve focused input and send latest value',async()=>{
@@ -166,7 +154,7 @@ test('debounce saves channels and module identity is read only here',async()=>{
   assert.equal(node.shadowRoot.querySelector('[data-module-name]'),null);
   assert.equal(requests.filter(r=>r.action==='save').at(-1).data.display_name,undefined);
   assert.equal(node.shadowRoot.querySelector('.module-details'),null);
-  assert.equal(requests.filter(r=>r.action==='operate').length,0);
+  assert.equal(requests.filter(r=>r.action==='command').length,0);
 });
 
 test('polling does not erase the module search',async()=>{
@@ -195,13 +183,13 @@ test('area filter selects matching modules and channels, counts live state and s
  const {node,requests,data}=await panel([a,b]);
  const filter=node.shadowRoot.querySelector('[aria-label="Filtrar por cômodo"]');filter.value='cozinha';filter.dispatchEvent(new Event('change'));
  assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
- assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/1 luzes · 1 relés em uso · 1 acionados/);
+ assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/1 luzes · 1 entradas em uso/);
  const original=node.hass.callWS;node.hass.callWS=async msg=>{if(msg.action==='operate_group'){requests.push(msg);return {sent:[{module_uuid:a.module_uuid,number:1}]};}return original(msg);};
  node.shadowRoot.querySelector('.group-off').click();node.shadowRoot.querySelector('.group-off').click();await tick();
  const batch=requests.filter(r=>r.action==='operate_group');assert.equal(batch.length,1);assert.deepEqual(batch[0].data,{module_ids:[a.module_uuid],area_id:'cozinha',payload:'OFF'});
  await node.navigate(a.module_uuid);assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,1);
- const power=node.shadowRoot.querySelector('[data-test="1"] button');assert.equal(power.textContent,'⏻');assert.equal(power.getAttribute('aria-checked'),'true');
- data.modules[a.module_uuid].channels[0].state='OFF';await node.load();assert.match(node.shadowRoot.querySelector('[data-summary]').textContent,/0 acionados/);
+ const power=node.shadowRoot.querySelector('[data-test="1"] button');assert.equal(power.textContent,'Acionar');assert.equal(power.getAttribute('aria-checked'),null);
+ data.modules[a.module_uuid].channels[0].state='OFF';await node.load();assert.ok(!node.shadowRoot.querySelector('[data-summary]').textContent.includes('acionados'));
 });
 
 test('overview edits serial and name together, preserving channels and showing rejected edits',async()=>{

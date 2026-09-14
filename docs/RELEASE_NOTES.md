@@ -1,12 +1,11 @@
-# Smart House Dingtian Manager 1.2.0
+# Smart House Dingtian Manager 1.3.0
 
-## 1.2.0
+## 1.3.0
 
-- Ícone próprio do aplicativo e cabeçalho compacto, sem abas de módulos.
-- Botões de energia redondos, sem texto visível de ligar/desligar; estado real refletido por cor.
-- Filtro por cômodo na lista e nos canais; contadores de luzes, canais em uso, relés acionados e estado desconhecido.
-- Ligar/desligar seleção atua somente nos canais em uso do filtro; falhas interrompem o envio e não provocam reenvio automático.
-- Nome e serial editáveis somente no lápis da lista de módulos. A substituição do serial atualiza todos os tópicos preservando entidades, nomes, tipos e cômodos.
-- Removida a seção de detalhes técnicos da tela de canais.
+- Visual Petróleo em toda a aplicação, com controles largos Acionar / Desacionar e identificação Entrada 1, Entrada 2 etc.
+- Entidades MQTT independentes, sem dispositivo agrupador. Mantém o recebimento de estado no HA, conforme o modelo do YAML de referência.
+- Migração dos cadastros antigos preserva entity_id, unique_id, nome, cômodo (inclusive herdado), ícone, aliases, etiquetas e preferências de visibilidade/habilitação. Registro persistente permite retomar a migração após interrupção.
+- Comandos da configuração enviam ON/OFF diretamente, QoS 0 e sem retenção, sem aguardar estado ou disponibilidade do módulo. Broker desconectado e falha de sincronização continuam bloqueando envio. Não há fila ou reenvio automático.
+- Removidos o feedback físico, contadores de estado e confirmação de navegação da tela de configuração. O HA mantém seus estados reais.
 
-Publicação condicionada aos testes da interface, motor, APIs reais do Home Assistant e contêineres amd64/aarch64. Testes físicos residenciais não são executados durante a validação.
+Instale pelo aplicativo do Home Assistant. A migração não envia ON/OFF. O cadastro MQTT continua administrado pelo aplicativo, sem necessidade de editar YAML. As entidades não são vinculadas a um dispositivo agrupador.

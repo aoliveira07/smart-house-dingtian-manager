@@ -64,10 +64,17 @@ async def api(request):
         raise ManagerError("Home Assistant desconectado. Nenhum comando foi enfileirado.")
     if action == "operate_group":
         return web.json_response(await manager.operate_group(data, confirmed, revision))
-    if action == "operate":
+    if action in {"operate", "command"}:
         if set(data) != {"module_uuid", "number", "payload"}:
             raise ManagerError("Parâmetros inválidos; tópicos arbitrários não são aceitos.")
-        await manager.operate(data["module_uuid"], data["number"], data["payload"], confirmed, revision)
+        await manager.operate(
+            data["module_uuid"],
+            data["number"],
+            data["payload"],
+            confirmed,
+            revision,
+            direct=action == "command",
+        )
         return web.json_response({"sent": True, "state_confirmed": False})
     if action == "import":
         async with manager.lock:

@@ -140,6 +140,20 @@ class Manager:
             if (targets or owned) and not self.port.connected:
                 raise ManagerError("Broker offline; intenção salva, sincronização pendente.")
             await self.port.preflight(self.state, targets)
+            migrations = self.state.setdefault("entity_migrations", {})
+            for topic, record in list(owned.items()):
+                if (
+                    topic in targets
+                    and "device" in record["payload"]
+                    and "device" not in targets[topic]["payload"]
+                ):
+                    if topic not in migrations:
+                        migrations[topic] = await self.port.capture_entity(record)
+                        await self.port.save(self.state)
+                    await self.port.publish_config(topic, "", record)
+                    await self.port.wait_removed(record)
+                    del owned[topic]
+                    await self.port.save(self.state)
             # Cleanup EVERY previous domain/prefix before creating any replacement.
             for topic in list(owned):
                 if topic not in targets:
@@ -159,6 +173,10 @@ class Manager:
                 await self.port.wait_created(record)
                 owned[topic]["applied"] = signature
                 await self.port.save(self.state)
+            for topic, metadata in migrations.items():
+                if topic in targets:
+                    await self.port.restore_entity(targets[topic], metadata)
+            self.state.pop("entity_migrations", None)
             await self.port.apply_names(self.state.get("name_updates", []))
             self.state["name_updates"] = []
             for mid in list(self.state["modules"]):
@@ -174,7 +192,7 @@ class Manager:
         finally:
             self.port.changed()
 
-    async def operate(self, mid, number, payload, confirmed, revision=None):
+    async def operate(self, mid, number, payload, confirmed, revision=None, direct=False):
         # Physical intent must be immediate: never wait behind a save, retry or another command.
         # There is no await between this check and acquiring the uncontended asyncio lock.
         if self.lock.locked():
@@ -192,7 +210,10 @@ class Manager:
                 raise ManagerError("Canal inativo ou sincronização pendente.")
             if not self.port.connected:
                 raise ManagerError("Broker offline; comando descartado, sem fila.")
-            await self.port.operate(module, c, payload)
+            if direct:
+                await self.port.send_command(module, c, payload)
+            else:
+                await self.port.operate(module, c, payload)
 
     async def operate_group(self, data, confirmed, revision):
         """An explicit, ephemeral batch. Never persisted or replayed after a failure."""
@@ -228,10 +249,6 @@ class Manager:
                 for c in m["channels"]:
                     if not c["enabled"] or (area is not None and (c.get("effective_area_id") or "") != area):
                         continue
-                    if m.get("availability") != "online" or c.get("test", {}).get("status") == "pending":
-                        raise ManagerError(
-                            "Há módulo offline ou comando pendente na seleção. Nenhum comando enviado."
-                        )
                     selected.append((mid, c["number"]))
             if not selected:
                 raise ManagerError("Nenhum canal em uso neste filtro.")
@@ -239,7 +256,7 @@ class Manager:
             for mid, number in selected:
                 m = self.state["modules"][mid]
                 try:
-                    await self.port.operate(m, m["channels"][number - 1], payload)
+                    await self.port.send_command(m, m["channels"][number - 1], payload)
                 except Exception as exc:
                     return {
                         "sent": sent,

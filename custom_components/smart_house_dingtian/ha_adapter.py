@@ -66,7 +66,12 @@ class HAPort:
 
     def is_ours(self, entry, module):
         device = dr.async_get(self.hass).async_get(entry.device_id) if entry.device_id else None
-        return bool(device and ("mqtt", f"shd_{module['module_uuid']}") in device.identifiers)
+        if device and ("mqtt", f"shd_{module['module_uuid']}") in device.identifiers:
+            return True
+        return not entry.device_id and any(
+            rec["module_uuid"] == module["module_uuid"] and rec["payload"]["unique_id"] == entry.unique_id
+            for rec in self.manager.state["owned_topics"].values()
+        )
 
     def refresh(self, state):
         """Read HA overrides; explicit pending renames win until applied."""
@@ -295,6 +300,40 @@ class HAPort:
                 return
             await asyncio.sleep(0.1)
         raise ManagerError("Discovery publicado; criação da entidade no HA ainda não confirmada.")
+
+    async def capture_entity(self, record):
+        module = self.manager.state["modules"][record["module_uuid"]]
+        channel = module["channels"][record["number"] - 1]
+        entry = self.registry_entry(module, channel)
+        if not entry:
+            return {}
+        device = dr.async_get(self.hass).async_get(entry.device_id) if entry.device_id else None
+        return {
+            "name": entry.name,
+            "icon": entry.icon,
+            "area_id": entry.area_id or (device.area_id if device else None),
+            "aliases": list(entry.aliases),
+            "labels": list(entry.labels),
+            "disabled_by": entry.disabled_by,
+            "hidden_by": entry.hidden_by,
+        }
+
+    async def restore_entity(self, record, metadata):
+        module = self.manager.state["modules"][record["module_uuid"]]
+        channel = module["channels"][record["number"] - 1]
+        entry = self.registry_entry(module, channel)
+        if metadata and entry:
+            er.async_get(self.hass).async_update_entity(entry.entity_id, **metadata)
+            channel["area_id"] = metadata.get("area_id")
+        if not entry or entry.device_id:
+            raise ManagerError("Migração para entidade independente ainda não confirmada.")
+
+    async def send_command(self, module, channel, payload):
+        if not self.connected:
+            raise ManagerError("MQTT indisponível; comando não enviado.")
+        await mqtt.async_publish(
+            self.hass, topics(module, channel)["command_topic"], payload, qos=0, retain=False
+        )
 
     async def operate(self, module, channel, payload):
         if not self.connected:

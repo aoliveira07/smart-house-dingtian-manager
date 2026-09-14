@@ -1,3 +1,7 @@
+# Atualização 1.3.0
+
+53 testes Python e 17 de interface aprovados localmente. Migração recuperável preserva nomes, áreas herdadas, ícones e aliases. Comandos independem de retorno MQTT; a CI valida APIs reais do HA e contêineres amd64/aarch64 antes da publicação.
+
 # Atualização 1.2.0
 
 Validação local: 51 testes do motor/aplicativo e 17 da interface aprovados. Regressões de substituição de serial, conservação de entidades e áreas, recuperação de falha parcial, filtro por cômodo, comando coletivo sem repetição e edição exclusiva pela lista. Testes reais de APIs do HA e contêineres são obrigatórios na CI antes da publicação.

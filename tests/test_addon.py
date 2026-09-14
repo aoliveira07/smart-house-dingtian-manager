@@ -54,7 +54,13 @@ class FakeHA:
             self.subs[ident] = (data["topic"], callback)
             return ident
         if kind == "config/entity_registry/update":
-            self.entities[data["entity_id"]].update({k: data[k] for k in ("name", "area_id") if k in data})
+            self.entities[data["entity_id"]].update(
+                {
+                    k: data[k]
+                    for k in ("name", "area_id", "icon", "labels", "aliases", "disabled_by", "hidden_by")
+                    if k in data
+                }
+            )
         if kind == "config/device_registry/update":
             self.devices[data["device_id"]]["name_by_user"] = data["name_by_user"]
 
@@ -81,8 +87,9 @@ class FakeHA:
             if payload:
                 config = json.loads(payload)
                 eid = config["default_entity_id"]
-                did = config["device"]["identifiers"][0]
-                self.devices[did] = {"id": did, "identifiers": [["mqtt", did]]}
+                did = config.get("device", {}).get("identifiers", [None])[0]
+                if did:
+                    self.devices[did] = {"id": did, "identifiers": [["mqtt", did]]}
                 self.entities[eid] = {
                     **self.entities.get(eid, {}),
                     "entity_id": eid,
@@ -417,7 +424,7 @@ async def test_replace_serial_preserves_entities_and_moves_all_topics(tmp_path):
     assert not any("relay00123" in topic for topic in port.received)
     for record in manager.state["owned_topics"].values():
         assert "relay00999" in record["payload"]["command_topic"]
-        assert record["payload"]["device"]["serial_number"] == "00999"
+        assert "device" not in record["payload"]
         assert "relay00123" not in record["applied"]
     assert all(
         "relay00999" in c["topics"]["state_topic"] for c in manager.snapshot()["modules"][mid]["channels"]
@@ -470,14 +477,10 @@ async def test_group_commands_filter_enabled_channels_inherit_area_and_never_rep
     result = await manager.operate_group(request, True, 2)
     assert result["sent"] == [{"module_uuid": mid, "number": 1}]
     assert [p for p in client.published if "/in/" in p[0]] == [("/Cabeado/relay00123/in/r1", "ON", 0, False)]
-    with pytest.raises(ManagerError, match="pendente"):
-        await manager.operate_group(request, True, 2)
-    client.receive("/Cabeado/relay00123/out/r1", "ON")
-    client.receive("/Cabeado/relay00123/out/lwt_availability", "offline")
-    with pytest.raises(ManagerError, match="offline"):
-        await manager.operate_group(request, True, 2)
+    # No device feedback is required; the next explicit command may immediately send OFF.
+    await manager.operate_group({**request, "payload": "OFF"}, True, 2)
     await manager.reconcile()
-    assert len([p for p in client.published if "/in/" in p[0]]) == 1
+    assert len([p for p in client.published if "/in/" in p[0]]) == 2
     port.tests.close()
 
 
@@ -509,8 +512,10 @@ async def test_group_uses_inherited_device_area_and_rejects_stale_or_invalid_req
     module = deepcopy(manager.state["modules"][mid])
     module["channels"][0]["enabled"] = True
     await manager.mutate("save", 1, module)
-    device = next(iter(client.devices.values()))
-    device["area_id"] = "sala"
+    entry = client.entities["light.cabeado1_r1"]
+    did = "shd_" + mid
+    client.devices[did] = {"id": did, "identifiers": [["mqtt", did]], "area_id": "sala"}
+    entry["device_id"] = did
     await port.registries()
     client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
     data = {"module_ids": [mid], "area_id": "sala", "payload": "ON"}
@@ -524,3 +529,64 @@ async def test_group_uses_inherited_device_area_and_rejects_stale_or_invalid_req
     result = await manager.operate_group(data, True, 2)
     assert result["sent"] == [{"module_uuid": mid, "number": 1}]
     port.tests.close()
+
+
+async def test_independent_migration_preserves_metadata_and_retries_after_removal(tmp_path, monkeypatch):
+    from dingtian_manager.app.core import manager as core
+
+    original = core.discovery
+
+    def grouped(state, module, channel, prefix):
+        topic, payload = original(state, module, channel, prefix)
+        payload["device"] = {"identifiers": ["shd_" + module["module_uuid"]], "name": module["display_name"]}
+        return topic, payload
+
+    monkeypatch.setattr(core, "discovery", grouped)
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(enabled=True, display_name="Abajur")
+    await manager.mutate("save", 1, module)
+    eid = "light.cabeado1_r1"
+    entry = client.entities[eid]
+    entry.update(name="Meu abajur", icon="mdi:lamp", labels=["quarto"], aliases=["Luz de leitura"])
+    client.devices[entry["device_id"]]["area_id"] = "sala"
+    await port.registries()
+    monkeypatch.setattr(core, "discovery", original)
+    publish = client.publish
+
+    async def fail_create(topic, payload, qos, retain):
+        if payload and topic.endswith("/config"):
+            raise OSError("interrupted migration")
+        await publish(topic, payload, qos, retain)
+
+    client.publish = fail_create
+    await manager.reconcile()
+    assert manager.state["error"] and manager.state["entity_migrations"]
+    assert eid not in client.entities
+    # Simulate restart with the durable journal before restoring metadata.
+    manager = port.manager = Manager(port)
+    await manager.load()
+    client.publish = publish
+    await manager.reconcile()
+    assert manager.state["error"] is None
+    entry = client.entities[eid]
+    assert entry["device_id"] is None
+    assert entry["name"] == "Meu abajur" and entry["area_id"] == "sala"
+    assert entry["icon"] == "mdi:lamp" and entry["aliases"] == ["Luz de leitura"]
+    assert entry["labels"] == ["quarto"]
+    assert not manager.state.get("entity_migrations")
+    assert all("device" not in rec["payload"] for rec in manager.state["owned_topics"].values())
+    assert not any("/in/" in topic for topic, *_ in client.published)
+
+
+async def test_direct_commands_do_not_wait_for_state_or_availability(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    await manager.operate(mid, 1, "ON", True, 1, direct=True)
+    await manager.operate(mid, 1, "OFF", True, 1, direct=True)
+    assert [p[1] for p in client.published] == ["ON", "OFF"]
+    assert all(p[2:] == (0, False) for p in client.published)
+    assert not port.tests.timers and not port.tests.items
+    client.broker = False
+    with pytest.raises(ManagerError):
+        await manager.operate(mid, 1, "ON", True, 1, direct=True)
+    assert len(client.published) == 2

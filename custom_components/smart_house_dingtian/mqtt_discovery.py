@@ -43,13 +43,6 @@ def discovery(state, module, channel, prefix):
         "optimistic": False,
         "qos": 0,
         "retain": False,
-        "device": {
-            "identifiers": [f"shd_{module['module_uuid']}"],
-            "name": module["display_name"],
-            "manufacturer": "Dingtian",
-            "model": f"Perfil MQTT de {module['channel_count']} canais",
-            "serial_number": module["serial"],
-        },
         "origin": {"name": "Smart House Dingtian Manager", "sw_version": VERSION},
     }
     if domain == "switch":

@@ -131,7 +131,13 @@ class RemotePort:
 
     def is_ours(self, entry, module):
         device = self.device(module)
-        return device and entry.get("device_id") == device["id"]
+        if device and entry.get("device_id") == device["id"]:
+            return True
+        return not entry.get("device_id") and any(
+            rec["module_uuid"] == module["module_uuid"]
+            and rec["payload"]["unique_id"] == entry.get("unique_id")
+            for rec in self.manager.state["owned_topics"].values()
+        )
 
     def registry_entry(self, module, channel, domain=None):
         domain = domain or channel["entity_type"]
@@ -189,7 +195,7 @@ class RemotePort:
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.2.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.3.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -409,6 +415,38 @@ class RemotePort:
 
     async def wait_removed(self, record):
         await self._wait_entity(record, False)
+
+    async def capture_entity(self, record):
+        await self.registries()
+        module = self.manager.state["modules"][record["module_uuid"]]
+        channel = module["channels"][record["number"] - 1]
+        entry = self.registry_entry(module, channel)
+        if not entry:
+            return {}
+        metadata = {
+            k: entry[k]
+            for k in ("name", "icon", "area_id", "aliases", "labels", "disabled_by", "hidden_by")
+            if k in entry
+        }
+        metadata["area_id"] = entry.get("area_id") or (self.device(module) or {}).get("area_id")
+        return metadata
+
+    async def restore_entity(self, record, metadata):
+        module = self.manager.state["modules"][record["module_uuid"]]
+        channel = module["channels"][record["number"] - 1]
+        entry = self.registry_entry(module, channel)
+        if metadata and entry:
+            await self.client.call("config/entity_registry/update", entity_id=entry["entity_id"], **metadata)
+            channel["area_id"] = metadata.get("area_id")
+            await self.registries()
+        if not entry or entry.get("device_id"):
+            raise ManagerError("Migração para entidade independente ainda não confirmada.")
+
+    async def send_command(self, module, channel, payload):
+        await self.inspect()
+        if self.legacy_active or not self.connected:
+            raise ManagerError("MQTT indisponível; comando não enviado.")
+        await self.client.publish(topics(module, channel)["command_topic"], payload, 0, False)
 
     async def operate(self, module, channel, payload):
         # Fresh broker check immediately before a command. No cached credentials/client queue.

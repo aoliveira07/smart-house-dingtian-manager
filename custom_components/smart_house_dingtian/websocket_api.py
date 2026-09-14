@@ -27,6 +27,7 @@ def admin(connection):
                 "delete",
                 "reconcile",
                 "operate",
+                "command",
                 "operate_group",
                 "prepare_remove",
             )
@@ -54,7 +55,7 @@ async def request(hass, connection, msg):
             result = await manager.reconcile(force=True)
         elif action == "operate_group":
             result = await manager.operate_group(data, msg["confirmed"], msg.get("revision"))
-        elif action == "operate":
+        elif action in {"operate", "command"}:
             if set(data) != {"module_uuid", "number", "payload"}:
                 raise ManagerError("Parâmetros de comando inválidos; tópicos livres não são aceitos.")
             await manager.operate(
@@ -63,6 +64,7 @@ async def request(hass, connection, msg):
                 data.get("payload"),
                 msg["confirmed"],
                 msg.get("revision"),
+                direct=action == "command",
             )
             result = {"sent": True, "state_confirmed": False}
         else:

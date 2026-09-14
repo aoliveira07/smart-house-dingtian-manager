@@ -5,7 +5,6 @@ from copy import deepcopy
 
 import pytest
 from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
@@ -17,8 +16,25 @@ from dingtian_manager.app.port import RemotePort
 
 @pytest.mark.usefixtures("socket_enabled")
 async def test_standalone_application_real_ha_apis(
-    hass, mqtt_mock, hass_client, hass_access_token, hass_admin_user, hass_read_only_user, tmp_path
+    hass,
+    mqtt_mock,
+    hass_client,
+    hass_access_token,
+    hass_admin_user,
+    hass_read_only_user,
+    tmp_path,
+    monkeypatch,
 ):
+    from dingtian_manager.app.core import manager as core
+
+    original = core.discovery
+
+    def grouped(state, module, channel, prefix):
+        topic, payload = original(state, module, channel, prefix)
+        payload["device"] = {"identifiers": ["shd_" + module["module_uuid"]], "name": module["display_name"]}
+        return topic, payload
+
+    monkeypatch.setattr(core, "discovery", grouped)
     mqtt_mock.conf = mqtt_mock.return_value.conf
     for component in ("config", "diagnostics", "websocket_api"):
         assert await async_setup_component(hass, component, {})
@@ -91,7 +107,18 @@ async def test_standalone_application_real_ha_apis(
         assert manager.state["error"] is None
         assert registry.async_get("light.minha_bancada").name == "Novo nome"
         assert registry.async_get("light.minha_bancada").area_id is None
-        old_entry = registry.async_get("light.minha_bancada")
+        registry.async_update_entity(
+            "light.minha_bancada", icon="mdi:lamp", aliases={"Luz de leitura"}, area_id=kitchen.id
+        )
+        monkeypatch.setattr(core, "discovery", original)
+        await manager.reconcile()
+        await hass.async_block_till_done()
+        assert manager.state["error"] is None
+        migrated = registry.async_get("light.minha_bancada")
+        assert migrated.device_id is None and migrated.unique_id == "Cabeado1-r7"
+        assert migrated.name == "Novo nome" and migrated.icon == "mdi:lamp"
+        assert migrated.area_id == kitchen.id and "Luz de leitura" in migrated.aliases
+        old_entry = migrated
         await manager.mutate(
             "edit_module", 4, {"module_uuid": mid, "serial": "00999", "display_name": "Quadro novo"}
         )
@@ -101,7 +128,7 @@ async def test_standalone_application_real_ha_apis(
         new_entry = registry.async_get("light.minha_bancada")
         assert new_entry.id == old_entry.id and new_entry.unique_id == old_entry.unique_id
         assert hass.states.get("light.minha_bancada").attributes["friendly_name"] == "Novo nome"
-        assert dr.async_get(hass).async_get(new_entry.device_id).serial_number == "00999"
+        assert new_entry.device_id is None
         assert not any("relay00123" in topic for topic in port.subscriptions)
         async_fire_mqtt_message(hass, "/Cabeado/relay00999/out/lwt_availability", "online")
         for _ in range(100):

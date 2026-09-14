@@ -1,76 +1,21 @@
-# Instalação e uso — aplicativo 1.2.0
+# Dingtian Manager 1.3.0
 
-## Requisitos
+Instale ou atualize pela loja de Aplicativos do Home Assistant. Repositório: https://github.com/aoliveira07/smart-house-dingtian-manager. Requer Core 2026.9.2+, Supervisor e MQTT configurado com Discovery.
 
-Home Assistant OS/Supervisor, Core 2026.9.2+, CPU amd64 ou aarch64, administrador e integração MQTT ativa com Discovery habilitado. O aplicativo reutiliza o MQTT do HA, inclusive um broker externo já configurado, sem pedir credenciais ou instalar Mosquitto adicional.
+## Uso
 
-## Instalar pela loja
+Cadastre módulos de 8, 16 ou 32 entradas. Abra as entradas para editar nome, cômodo, tipo e uso, com salvamento automático. Nome do módulo e serial ficam disponíveis somente no lápis da lista. Alterar serial substitui os tópicos preservando a identidade lógica; use um equipamento com a mesma capacidade.
 
-1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
-2. Em **⋮ → Repositórios**, adicione `https://github.com/aoliveira07/smart-house-dingtian-manager`.
-3. Atualize a loja e abra **Smart House Dingtian Manager**.
-4. Instale a **1.2.0**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
+O filtro por cômodo limita os módulos e entradas. Cada controle Acionar / Desacionar envia ON / OFF, QoS 0, retain false. A interface não aguarda feedback e não representa o estado físico. Controles coletivos atuam somente sobre entradas em uso na seleção. Os comandos exigem conexão com o broker, não são enfileirados e não são reenviados após falha. O estado e a disponibilidade das entidades no HA continuam vindo dos tópicos MQTT.
 
-Não instale o ZIP de integração pelo HACS para obter o aplicativo. Não é necessário reiniciar o Core para instalar este aplicativo. Seu inventário começa vazio.
+## Entidades independentes e atualização
 
-Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.2.0.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
+Cada canal gera uma entidade MQTT independente, sem bloco device. Os módulos continuam organizados internamente no aplicativo. A atualização migra os antigos cadastros agrupados através de remoção e recriação do Discovery sob a mesma identidade lógica, preservando IDs de entidade, nomes, áreas, ícones, aliases, etiquetas e preferências de visibilidade. Áreas herdadas do dispositivo são copiadas para cada entidade. O agrupamento antigo pode desaparecer quando não contém mais entidades.
 
-## Primeiro módulo e teste
+Durante a migração, as entidades podem ficar temporariamente indisponíveis. O cadastro e os metadados são salvos antes da remoção, permitindo retomar a operação após interrupção. Não remova o aplicativo nem o inventário durante uma sincronização pendente; use Tentar sincronizar após restabelecer MQTT/HA. A migração não altera estados físicos dos relés.
 
-Cadastre serial e capacidade. A capacidade fica fixa. O serial pode ser substituído pelo lápis da lista de módulos, com salvamento explícito. Use um nome provisório se necessário. Abra o módulo e espere a disponibilidade `online`.
+Não carregue o YAML de referência junto com entidades de mesmo unique_id gerenciadas pelo aplicativo. Ele descreve o formato desejado, não um segundo cadastro a ser importado automaticamente.
 
-Cada canal possui um **toggle de teste real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. O clique envia o comando diretamente, sem janela de confirmação do navegador. Observe a carga localmente em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
+## Recuperação
 
-Depois de identificar a carga, preencha nome, cômodo e tipo, e marque **Usar**. As alterações são salvas após uma breve pausa (600 ms), ao sair do campo ou imediatamente nos seletores. Aguarde **✓ Salvo**. Não é necessário um botão de salvar. Canais não utilizados podem ficar com nome/tipo vazios. Editar não envia comandos ON/OFF.
-
-**Cômodo:** selecione uma área já cadastrada no Home Assistant. A escolha afeta somente a entidade desse relé, sem mover o módulo inteiro. **Padrão do módulo** remove a área própria da entidade, deixando o HA herdar a área do dispositivo, quando houver. O campo pode ser preenchido antes de habilitar o canal e é preservado ao trocar Luz/Switch. Gerencie as áreas em Configurações do HA.
-
-**Proteção de edição:** durante uma gravação, novos caracteres ficam no rascunho e são enviados na sequência. Navegar entre módulos aguarda o salvamento. Em falhas, a edição fica na tela e em rascunho local do navegador; use **Revisar / tentar novamente**. Conflitos entre abas mostram as alterações antes de aplicá-las sobre o cadastro atual. Se o navegador bloquear armazenamento local, mantenha a página aberta até confirmar o salvamento. Limpar os dados do navegador remove rascunhos locais; o cadastro já salvo permanece no HA.
-
-Detalhes de estado, IDs e tópicos ficam em **Detalhes técnicos dos canais**. Canais não utilizados que reportam ON permanecem visíveis, com aviso ao sair. Navegar não desliga relés nem desfaz testes anteriores.
-
-## Atualizar e fazer backup
-
-Faça um backup do aplicativo/HA antes de atualizar. Use **Atualizar** na página do aplicativo; o Supervisor mantém `/data`. Também é possível exportar um JSON do cadastro pela visão geral. O arquivo contém seus seriais, nomes e tópicos, portanto mantenha-o privado.
-
-A opção **Importar cadastro existente** aceita esse JSON somente em aplicativo ainda vazio. Não sobrescreve módulos atuais nem corrige arquivos corrompidos silenciosamente. A importação não envia ON/OFF; a sincronização automática posterior restaura Discovery quando o MQTT estiver pronto.
-
-## Migrar da integração beta anterior
-
-Somente se você já instalou e cadastrou módulos na integração `smart_house_dingtian`:
-
-1. Faça um backup do HA. Guarde uma cópia privada de `/config/.storage/smart_house_dingtian` (o arquivo é JSON; não o edite). Caso o editor oculte `.storage`, use o recurso de arquivos/backup administrativo disponível na instalação.
-2. **Desative** a integração Smart House Dingtian Manager em Dispositivos e serviços. Não use “Preparar remoção permanente”, pois isso apagaria o cadastro/Discovery que será migrado. Se preferir, faça a cópia do arquivo depois da desativação para capturar a gravação mais recente.
-3. Instale/inicie o aplicativo e use **Importar cadastro existente**, selecionando o JSON salvo. Tanto o formato Store do HA (`version`/`data`) quanto o JSON exportado pelo aplicativo são aceitos.
-4. Confira módulos, seriais, nomes, IDs e canais utilizados. O UUID do gerenciador, UUIDs dos módulos, sequência e diário são preservados. O aplicativo reaproveita as entidades existentes e só sincroniza configurações.
-5. Mantenha a integração anterior desativada. Não ative os dois gerenciadores simultaneamente; o aplicativo bloqueia essa condição.
-
-A integração antiga pode continuar desativada para reversão. Para reverter após novas alterações no aplicativo, pare o aplicativo e restaure um backup consistente de antes da migração; não ligue a integração antiga com um cadastro desatualizado esperando que ela importe alterações sozinha.
-
-Se você usa apenas YAML legado, não importe os exemplos como inventário. Siga a retirada individual descrita no documento [CLEAN_START](https://github.com/aoliveira07/smart-house-dingtian-manager/blob/main/docs/CLEAN_START.md), preservando outras entidades MQTT.
-
-## Remover
-
-Para desinstalar definitivamente e limpar as entidades deste gerenciador, use **Manutenção → Preparar remoção permanente**, com broker online. Verifique que a sincronização terminou; então desinstale o aplicativo. Nenhum OFF é enviado. Desinstalar diretamente pode deixar Discovery retido no broker. O backend limpa somente os tópicos do diário próprio.
-
-## Falhas comuns
-
-- **Não aparece na loja:** confira a URL do repositório, atualize a loja e confirme arquitetura/Core suportados.
-- **Acesso negado:** abra pela interface Web/Ingress com administrador ativo. Porta 8099 não é publicada e acesso direto é rejeitado.
-- **Aguardando disponibilidade:** o módulo precisa publicar `online` no tópico LWT contratado. Não há comando de consulta inventado.
-- **Broker desconectado:** confira MQTT em Dispositivos e serviços. O gerenciador tenta reconectar a API e sincronizar Discovery, sem reenviar comandos de relé.
-- **Conflito MQTT/entity_id:** resolva individualmente o legado ou Discovery concorrente. O gerenciador não aceita silenciosamente um ID com sufixo.
-- **Resultado físico não confirmado:** observe a carga antes de decidir o próximo comando; não suponha OFF.
-- **Cadastro alterado:** use Revisar / tentar novamente para conferir a edição e a versão salva pela outra sessão.
-
-A versão 1.2.0 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
-
-## Controles e substituição de módulo — 1.2.0
-
-Na lista de módulos, o lápis permite editar nome e número de série em uma única operação. Use um equipamento substituto com a mesma quantidade de canais. O serial é validado contra os demais módulos; os tópicos MQTT são substituídos preservando unique_id, entity_id, nomes, tipos e cômodos. Capacidade e identidade lógica permanecem fixas. Uma falha de sincronização pode ser retomada sem comandos de relé.
-
-Na página de canais, nome e serial do módulo são somente leitura. O botão redondo alterna o relé conforme o estado recebido. Em estado desconhecido, há duas ações explícitas de energia, com identificação acessível e por tooltip.
-
-O filtro Cômodo limita a lista e os canais. Todos os cômodos remove o filtro; Sem cômodo seleciona canais sem área própria nem herdada do dispositivo. Os contadores mostram luzes em uso, relés em uso, relés acionados e relés sem estado recebido. Ligar seleção e Desligar seleção comandam somente os canais marcados como Usar dos módulos visíveis, respeitando a busca e o cômodo. Dentro de um módulo, a ação fica limitada a ele. Seleção offline ou com comando pendente é bloqueada antes do envio; uma falha durante o envio interrompe os canais restantes, mostra o progresso e não reenvia automaticamente. Nenhuma operação coletiva é feita ao editar, salvar ou trocar serial.
-
-O ícone do aplicativo é distribuído em icon.png, seguindo a [documentação do Home Assistant](https://developers.home-assistant.io/docs/apps/presentation/).
+Use backup do HA antes de atualizar. Exportar cadastro salva o inventário. Importar é permitido apenas em aplicativo vazio. Dados persistem em /data. A limpeza de remoção do gerenciador remove suas entidades e Discovery, mas não envia OFF aos equipamentos. O painel é restrito a administradores via Ingress.
