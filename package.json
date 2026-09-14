@@ -1,0 +1,13 @@
+{
+  "name": "smart-house-dingtian-manager",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node frontend/build.mjs",
+    "test": "node --test tests/frontend.test.mjs"
+  },
+  "devDependencies": {
+    "happy-dom": "20.14.5"
+  }
+}

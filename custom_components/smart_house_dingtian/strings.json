@@ -1,0 +1,8 @@
+{
+  "title": "Smart House Dingtian Manager",
+  "config": {
+    "step": {"user": {"title": "Dingtian Manager", "description": "Reuses your existing MQTT integration. Inventory starts empty. Open Dingtian Manager in the sidebar after setup."}},
+    "abort": {"already_configured": "Only one manager is supported.", "mqtt_required": "Configure the MQTT integration first. Existing broker credentials will be reused."}
+  },
+  "options": {"step": {"init": {"title": "Open Dingtian Manager", "description": "[Open the module manager](/smart-house-dingtian). You can also use the Dingtian Manager sidebar item."}}}
+}

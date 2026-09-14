@@ -1,0 +1,8 @@
+{
+  "title": "Smart House Dingtian Manager",
+  "config": {
+    "step": {"user": {"title": "Dingtian Manager", "description": "Reutiliza sua integração MQTT existente. O cadastro começa vazio. Após instalar, abra Dingtian Manager na barra lateral."}},
+    "abort": {"already_configured": "Somente um gerenciador é permitido.", "mqtt_required": "Configure primeiro a integração MQTT. As credenciais existentes serão reutilizadas."}
+  },
+  "options": {"step": {"init": {"title": "Abrir Dingtian Manager", "description": "[Abrir o gerenciador de módulos](/smart-house-dingtian). Também disponível na barra lateral como Dingtian Manager."}}}
+}

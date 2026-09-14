@@ -1,0 +1,7 @@
+{
+  "name": "Smart House Dingtian Manager",
+  "homeassistant": "2026.9.2",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "smart_house_dingtian.zip"
+}
