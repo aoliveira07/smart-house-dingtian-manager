@@ -15,6 +15,7 @@ class Channel(TypedDict):
     enabled: bool
     entity_type: str
     display_name: str
+    area_id: str | None
     unique_id: str
     last_entity_ids: dict[str, str]
 
@@ -77,6 +78,7 @@ def new_module(state, data):
                 "display_name": f"Saída {n}",
                 "unique_id": f"{technical}-r{n}",
                 "last_entity_ids": {},
+                "area_id": None,
             }
             for n in range(1, count + 1)
         ],
@@ -107,7 +109,13 @@ def update_module(module, data):
         ):
             raise ManagerError("Uso e tipo do canal são obrigatórios.")
         target = result["channels"][n - 1]
+        area = item.get("area_id", target.get("area_id"))
+        if area is not None and (
+            not isinstance(area, str) or not area or len(area) > 128 or any(ord(c) < 32 for c in area)
+        ):
+            raise ManagerError("Cômodo inválido. Selecione uma área do Home Assistant.")
         target.update(
+            area_id=area,
             enabled=item["enabled"],
             entity_type=item["entity_type"],
             display_name=name(item.get("display_name"))

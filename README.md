@@ -1,8 +1,8 @@
-# Smart House Dingtian Manager — 1.0.1
+# Smart House Dingtian Manager — 1.1.0
 
 Aplicativo/add-on para **Home Assistant OS com Supervisor**, instalado pela tela **Aplicativos**. Organiza módulos Dingtian de **8, 16 ou 32 saídas**, com uma página por módulo e teste individual de relé antes de definir nome, tipo ou uso.
 
-**1.0.1 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
+**1.1.0 inclui o handoff principal e o Adendo 01. Homologação física pendente.** A tag beta anterior `v0.1.0b1` permanece no histórico; o aplicativo é a distribuição principal a partir de 1.0.0. A release é sinalizada como pré-release até a homologação, sem alterar o número solicitado.
 
 ## Instalar como aplicativo
 
@@ -18,9 +18,11 @@ O aplicativo usa a conexão MQTT existente do Home Assistant pela API interna do
 
 [Instalação, atualização e migração](dingtian_manager/DOCS.md) · [Pacotes e releases](https://github.com/aoliveira07/smart-house-dingtian-manager/releases) · [Evidências dos testes](docs/TEST_RESULTS.md)
 
-## Atualização 1.0.1
+## Atualização 1.1.0
 
-O toggle envia Ligar/Desligar diretamente ao clicar, sem a confirmação do navegador. Atualize pela página do aplicativo; cadastros e IDs são preservados.
+Interface com lista compacta de módulos, busca e layout para celular. Cada canal permite testar o relé e editar **nome, cômodo, tipo e uso**. Os campos salvam automaticamente, com feedback e recuperação de rascunho; não existe dependência de botão no rodapé. O cômodo usa as áreas existentes do Home Assistant e é aplicado individualmente à entidade do canal.
+
+O toggle envia ON/OFF diretamente, sem janela de confirmação do navegador. Estado recebido, bloqueio durante pendência e validação de disponibilidade continuam preservados.
 
 ## Cadastrar e identificar saídas
 
@@ -31,7 +33,7 @@ O toggle envia Ligar/Desligar diretamente ao clicar, sem a confirmação do nave
 
 O teste funciona mesmo sem entidade, sem nome definitivo, sem tipo escolhido ou com uso desmarcado. Não cria Discovery nem modifica o formulário. Canais não utilizados continuam visíveis na administração. As entidades operacionais são criadas somente ao salvar canais utilizados.
 
-O estado exibido vem das mensagens do equipamento. A publicação não confirma a ação física: o painel aguarda retorno, limita comandos repetidos e informa timeout sem reenviar. Broker desconectado, módulo offline ou disponibilidade desconhecida bloqueiam comandos. **Cancelar, salvar, navegar ou reiniciar não envia ON/OFF e não desfaz um teste anterior.** Não há teste coletivo, pulso ou OFF automático.
+O estado exibido vem das mensagens do equipamento. A publicação não confirma a ação física: o painel aguarda retorno, limita comandos repetidos e informa timeout sem reenviar. Broker desconectado, módulo offline ou disponibilidade desconhecida bloqueiam comandos. **Salvar, navegar ou reiniciar não envia ON/OFF e não desfaz um teste anterior.** Não há teste coletivo, pulso ou OFF automático.
 
 ## Identidade e MQTT
 
@@ -52,7 +54,7 @@ Inventário, UUIDs, sequência de módulos e diário Discovery ficam em `/data/i
 
 Atualize pela própria tela do aplicativo. A antiga integração continua no código para compatibilidade/migração, mas **não deve permanecer ativa simultaneamente com o aplicativo**. O backend bloqueia alterações nessa condição. A migração é explícita, importa o cadastro preservando IDs e aceita somente destino vazio; siga [DOCS.md](dingtian_manager/DOCS.md).
 
-O arquivo `smart-house-dingtian-manager-addon-1.0.1.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
+O arquivo `smart-house-dingtian-manager-addon-1.1.0.zip` contém o contexto instalável local em `/addons`. Os ZIPs `smart_house_dingtian.zip` e `smart-house-dingtian-manager-manual.zip` são da integração anterior e não são o pacote do aplicativo.
 
 ## Desenvolvimento
 

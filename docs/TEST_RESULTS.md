@@ -1,3 +1,13 @@
+# Atualização 1.1.0 — UI e cômodos
+
+Validação local: **41 testes de núcleo/aplicativo e 14 testes de interface aprovados**. A CI executa também os 5 testes com HA Core real (transporte MQTT isolado), incluindo seleção/remoção de área pela API e preservação ao trocar o tipo da entidade, além dos dois builds/smoke tests de contêiner. A publicação depende desses jobs.
+
+Regressões de interface: debounce e blur, navegação com flush, edição durante pedido lento, falha de rede com rascunho persistente, recuperação após recarga, conflito entre abas com revisão, configuração de cômodo/tipo/uso sem comandos de relé e toggle direto ON/OFF com estado confirmado pelo equipamento.
+
+Regressões de cômodo no backend: preenchimento antes de habilitar, criação e troca de domínio, persistência após restart, alteração externa no HA, remoção da área própria da entidade, rejeição de área inexistente e recuperação de falha no registro do HA pelo diário de sincronização. Nenhuma dessas operações envia ON/OFF.
+
+## Histórico de validação
+
 # Atualização 1.0.1
 
 Regressão do toggle validada em teste de DOM: clique com estado OFF envia ON; após retorno ON, clique envia OFF; zero chamadas de confirmação, nenhum comando duplicado e estado sem alteração otimista. **9 testes de frontend e 38 de núcleo/aplicativo passaram localmente**. A publicação exige também os 5 testes no HA e os builds/smoke tests amd64/arm64; a execução da versão está vinculada nas notas da release. Total da suíte: **52 testes**.

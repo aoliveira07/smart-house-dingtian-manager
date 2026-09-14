@@ -60,7 +60,7 @@ jobs:
       - run: docker buildx build --platform ${{ matrix.platform }} --build-arg BUILD_ARCH=${{ matrix.arch }} --load -t dingtian-test dingtian_manager
       - run: python scripts/smoke_container.py
   release:
-    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release ')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
     needs: [core, home-assistant, hacs, application-container]
     runs-on: ubuntu-latest
     permissions:
@@ -76,4 +76,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           printf '\nCI da release: %s/actions/runs/%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> docs/RELEASE_NOTES.md
-          gh release create v1.0.1 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.0.1 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md
+          gh release create v1.1.0 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.1.0 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md

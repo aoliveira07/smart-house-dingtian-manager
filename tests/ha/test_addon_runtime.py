@@ -4,6 +4,7 @@ import asyncio
 from copy import deepcopy
 
 import pytest
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
@@ -57,10 +58,15 @@ async def test_standalone_application_real_ha_apis(
         await asyncio.sleep(0.05)
         assert manager.snapshot()["modules"][mid]["channels"][6]["test"]["status"] == "confirmed"
         module = deepcopy(manager.state["modules"][mid])
-        module["channels"][6].update(enabled=True, display_name="Bancada", entity_type="light")
+        kitchen = ar.async_get(hass).async_create("Cozinha")
+        module["channels"][6].update(
+            enabled=True, display_name="Bancada", entity_type="light", area_id=kitchen.id
+        )
         await manager.mutate("save", 1, module)
         assert manager.state["error"] is None
         assert er.async_get(hass).async_get("light.cabeado1_r7").unique_id == "Cabeado1-r7"
+        assert er.async_get(hass).async_get("light.cabeado1_r7").area_id == kitchen.id
+        assert {"area_id": kitchen.id, "name": "Cozinha"} in manager.snapshot()["areas"]
         registry = er.async_get(hass)
         registry.async_update_entity(
             "light.cabeado1_r7", new_entity_id="light.minha_bancada", name="Nome externo"
@@ -70,9 +76,11 @@ async def test_standalone_application_real_ha_apis(
         assert snapshot["channels"][6]["entity_id"] == "light.minha_bancada"
         assert snapshot["channels"][6]["display_name"] == "Nome externo"
         snapshot["channels"][6]["display_name"] = "Novo nome"
+        snapshot["channels"][6]["area_id"] = None
         await manager.mutate("save", 2, snapshot)
         assert manager.state["error"] is None
         assert registry.async_get("light.minha_bancada").name == "Novo nome"
+        assert registry.async_get("light.minha_bancada").area_id is None
         await manager.mutate("delete", 3, {"module_uuid": mid}, True)
         assert manager.state["error"] is None
         assert not registry.async_get("light.minha_bancada")

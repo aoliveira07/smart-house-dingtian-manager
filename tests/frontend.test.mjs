@@ -8,11 +8,12 @@ await import('../frontend/panel.js');
 const tick = () => new Promise(resolve=>setTimeout(resolve,20));
 function moduleData(n,count){return {module_uuid:String(n).padStart(32,'0'),technical_id:`Cabeado${n}`,serial:`000${n}`,channel_count:count,display_name:`Quadro ${n}`,used_count:0,availability:'unknown',channels:Array.from({length:count},(_,i)=>({number:i+1,enabled:false,entity_type:'light',display_name:`Saída ${i+1}`,unique_id:`Cabeado${n}-r${i+1}`,last_entity_ids:{},entity_id:null,state:'unknown',topics:{}}))};}
 async function panel(modules=[]){
+  window.localStorage.clear();
   window.history.replaceState(null,'','/smart-house-dingtian');
   const requests=[];
-  const data={revision:1,next_module_number:modules.length+1,modules:Object.fromEntries(modules.map(m=>[m.module_uuid,m])),broker_connected:true,error:null};
+  const data={revision:1,next_module_number:modules.length+1,modules:Object.fromEntries(modules.map(m=>[m.module_uuid,m])),broker_connected:true,error:null,areas:[{area_id:'cozinha',name:'Cozinha'},{area_id:'sala',name:'Sala'}]};
   const node=document.createElement('smart-house-dingtian-panel');
-  node.hass={callWS:async msg=>{requests.push(msg);return structuredClone(data);},connection:{subscribeMessage:async()=>()=>{}}};
+  node.hass={callWS:async msg=>{requests.push(structuredClone(msg));if(msg.action==='save'){const mod=data.modules[msg.data.module_uuid];mod.display_name=msg.data.display_name;msg.data.channels.forEach((c,i)=>Object.assign(mod.channels[i],structuredClone(c)));data.revision++;}return structuredClone(data);},connection:{subscribeMessage:async()=>()=>{}}};
   document.body.replaceChildren(node);await tick();
   return {node,requests,data};
 }
@@ -22,7 +23,7 @@ test('empty install has no phantom modules or channels',async()=>{
 });
 test('separate 8,16,32 channel pages and history',async()=>{
   const {node}=await panel([moduleData(1,8),moduleData(2,16),moduleData(3,32)]);
-  assert.equal(node.shadowRoot.querySelectorAll('.card').length,3);
+  assert.equal(node.shadowRoot.querySelectorAll('.module-row').length,3);
   for(const [index,count] of [[1,8],[2,16],[3,32]]){
     node.navigate(String(index).padStart(32,'0'));
     assert.equal(node.shadowRoot.querySelectorAll('.channel').length,count);
@@ -35,36 +36,39 @@ test('names are text, not injected markup',async()=>{
   const {node}=await panel([m]);assert.equal(node.shadowRoot.querySelector('img'),null);
   assert.ok(node.shadowRoot.textContent.includes(m.display_name));
 });
-test('unsaved navigation cancellation and batch save revision',async()=>{
+test('navigation flushes latest text without manual save or relay operations',async()=>{
   const {node,requests}=await panel([moduleData(1,8),moduleData(2,16)]);
   const id=String(1).padStart(32,'0');node.navigate(id);
   const input=node.shadowRoot.querySelector('[aria-label="Nome R1"]');input.value='Cozinha';input.dispatchEvent(new Event('input'));
-  window.confirm=()=>false;node.navigate(String(2).padStart(32,'0'));assert.equal(node.active,id);
-  await node.save();const save=requests.find(r=>r.action==='save');
+  await node.navigate(String(2).padStart(32,'0'));assert.equal(node.active,String(2).padStart(32,'0'));
+  const save=requests.find(r=>r.action==='save');
   assert.equal(save.revision,1);assert.equal(save.data.channels.length,8);assert.equal(save.data.channels[0].display_name,'Cozinha');
   assert.equal(requests.filter(r=>r.action==='operate').length,0);
-});
-test('type change requires confirmation before any API mutation',async()=>{
-  const m=moduleData(1,8);m.channels[0].enabled=true;
-  const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
-  node.draft.channels[0].entity_type='switch';node.changed();window.confirm=()=>false;await node.save();
-  assert.equal(requests.filter(r=>r.action==='save').length,0);
+  assert.ok(!node.shadowRoot.textContent.includes('Salvar módulo'));
 });
 
-test('test control precedes name and works before use, preserving unsaved draft',async()=>{
-  const m=moduleData(1,8);m.availability='online';m.channels[6].display_name='';m.channels[6].entity_type='';
+test('type, area and usage automatically persist as configuration only',async()=>{
+  const m=moduleData(1,8);m.channels[0].enabled=true;
+  const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
+  window.confirm=()=>{throw new Error('Unexpected dialog');};
+  for(const [label,value] of [['Tipo R1','switch'],['Cômodo R1','cozinha']]){
+    const input=node.shadowRoot.querySelector(`[aria-label="${label}"]`);input.value=value;input.dispatchEvent(new Event('change'));await tick();
+  }
+  const use=node.shadowRoot.querySelector('[aria-label="R1 utilizado"]');use.checked=false;use.dispatchEvent(new Event('change'));await tick();
+  const saves=requests.filter(r=>r.action==='save');assert.equal(saves.length,3);assert.equal(saves[1].data.channels[0].area_id,'cozinha');assert.equal(saves[2].data.channels[0].enabled,false);
+  assert.equal(requests.filter(r=>r.action==='operate').length,0);assert.equal(node.dirty,false);
+});
+
+test('test control precedes name, unknown state is explicit, editing blocks real commands',async()=>{
+  const m=moduleData(1,8);m.availability='online';
   const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
   const row=node.shadowRoot.querySelectorAll('.channel')[6];
   assert.equal(row.children[1].dataset.test,'7');assert.equal(row.children[2].className,'channel-name');
-  assert.match(row.textContent,/Estado recebido: Desconhecido/);
+  assert.ok(!row.textContent.includes('Estado recebido'));assert.match(row.textContent,/Estado desconhecido/);
   assert.equal(row.querySelectorAll('[role=switch]').length,0);
   const input=row.querySelector('[aria-label="Nome R7"]');input.value='Rascunho';input.dispatchEvent(new Event('input'));
-  window.confirm=()=>true;
-  await node.testRelay(m,m.channels[6],'ON');
-  const commands=requests.filter(r=>r.action==='operate');assert.equal(commands.length,1);
-  assert.deepEqual(commands[0].data,{module_uuid:m.module_uuid,number:7,payload:'ON'});
-  assert.equal(node.draft.channels[6].display_name,'Rascunho');assert.equal(node.draft.channels[6].enabled,false);
-  assert.equal(requests.filter(r=>r.action==='save').length,0);
+  await node.testRelay(m,m.channels[6],'ON');assert.equal(requests.filter(r=>r.action==='operate').length,0);
+  await node.save();assert.equal(node.dirty,false);assert.equal(node.draft.channels[6].display_name,'Rascunho');
 });
 
 test('pending and unavailable test buttons are disabled without invented OFF',async()=>{
@@ -109,4 +113,64 @@ test('toggle clicks send ON and OFF directly without confirmation or duplicate c
   assert.deepEqual(commands.map(r=>r.data.payload),['ON','OFF']);
   assert.equal(confirmations,0);assert.equal(node.draft.channels[0].enabled,false);
   assert.equal(requests.filter(r=>r.action==='save').length,0);
+});
+
+test('slow saves serialize edits, preserve focused input and send latest value',async()=>{
+  const m=moduleData(1,32);const {node,requests,data}=await panel([m]);node.navigate(m.module_uuid);
+  const original=node.hass.callWS;let release;let active=0,max=0;
+  node.hass.callWS=async msg=>{
+    if(msg.action!=='save')return original(msg);
+    active++;max=Math.max(max,active);
+    if(!release)await new Promise(resolve=>{release=resolve;});
+    const out=await original(msg);active--;return out;
+  };
+  const input=node.shadowRoot.querySelector('[aria-label="Nome R1"]');input.focus();
+  input.value='Primeiro';input.dispatchEvent(new Event('input'));const pending=node.save();
+  input.value='Última edição';input.dispatchEvent(new Event('input'));
+  await node.load();assert.equal(node.shadowRoot.querySelector('[aria-label="Nome R1"]'),input);
+  release();await pending;
+  assert.equal(max,1);assert.equal(data.modules[m.module_uuid].channels[0].display_name,'Última edição');
+  assert.deepEqual(requests.filter(r=>r.action==='save').map(r=>r.revision),[1,2]);
+  assert.equal(node.shadowRoot.activeElement,input);assert.equal(node.dirty,false);
+});
+
+test('network failure preserves draft and blocks navigation, retry persists it',async()=>{
+  const m=moduleData(1,8);const {node,data}=await panel([m]);node.navigate(m.module_uuid);
+  const original=node.hass.callWS;node.hass.callWS=async msg=>{if(msg.action==='save')throw new Error('Sem conexão');return original(msg);};
+  const input=node.shadowRoot.querySelector('[aria-label="Nome R1"]');input.value='Edição importante';input.dispatchEvent(new Event('input'));
+  await node.navigate('');assert.equal(node.active,m.module_uuid);assert.equal(node.dirty,true);
+  assert.match(node.shadowRoot.querySelector('[data-dirty]').textContent,/Não salvo/);
+  assert.ok(window.localStorage.getItem(node.draftKey()).includes('Edição importante'));
+  node.hass.callWS=original;await node.retrySave();assert.equal(node.dirty,false);
+  assert.equal(data.modules[m.module_uuid].channels[0].display_name,'Edição importante');
+});
+
+test('reload restores the unsaved draft and revision conflict does not overwrite server',async()=>{
+  const m=moduleData(1,8);const {node,data,requests}=await panel([m]);node.navigate(m.module_uuid);
+  node.draft.channels[0].display_name='Local';node.changed();clearTimeout(node.saveTimer);
+  data.revision=2;data.modules[m.module_uuid].channels[1].display_name='Outra aba';
+  node.data=structuredClone(data);node.resetDraft();clearTimeout(node.saveTimer);
+  assert.equal(node.draft.channels[0].display_name,'Local');assert.equal(node.editRevision,1);
+  assert.equal(await node.save(),false);assert.equal(requests.filter(r=>r.action==='save').length,0);
+  await node.retrySave();const dialog=node.shadowRoot.querySelector('dialog');assert.ok(dialog);
+  [...dialog.querySelectorAll('button')].find(b=>b.textContent==='Aplicar minhas alterações').click();await tick();
+  assert.equal(data.modules[m.module_uuid].channels[0].display_name,'Local');
+  assert.equal(data.modules[m.module_uuid].channels[1].display_name,'Outra aba');
+});
+
+test('debounce saves without a button and module name blur flushes immediately',async()=>{
+  const m=moduleData(1,8);const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
+  const input=node.shadowRoot.querySelector('[aria-label="Nome R1"]');
+  input.value='Auto';input.dispatchEvent(new Event('input'));
+  await new Promise(resolve=>setTimeout(resolve,680));assert.equal(node.dirty,false);
+  const name=node.shadowRoot.querySelector('[data-module-name]');name.value='Novo quadro';name.dispatchEvent(new Event('input'));name.dispatchEvent(new Event('blur'));await tick();
+  assert.equal(requests.filter(r=>r.action==='save').at(-1).data.display_name,'Novo quadro');
+  assert.equal(requests.filter(r=>r.action==='operate').length,0);
+});
+
+test('polling does not erase the module search',async()=>{
+  const {node}=await panel([moduleData(1,8),moduleData(2,32)]);
+  const search=node.shadowRoot.querySelector('[type=search]');search.value='Quadro 2';search.dispatchEvent(new Event('input'));await node.load();
+  assert.equal(node.shadowRoot.querySelector('[type=search]'),search);
+  assert.equal(node.shadowRoot.querySelectorAll('.module-row:not([hidden])').length,1);
 });

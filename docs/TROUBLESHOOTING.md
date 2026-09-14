@@ -14,7 +14,7 @@ Consulte primeiro [instalação e falhas do aplicativo](../dingtian_manager/DOCS
 
 **Colisão:** confira o entity_id apontado, o YAML Dingtian e Discovery do fabricante. Remova o conflito individualmente pela interface do HA, com backup. Não exclua entidade alheia automaticamente. Após liberar o ID, tente sincronizar. O painel nunca oferece edição de unique_id.
 
-**Alteração em outra aba:** recarregue o cadastro e reaplique sua edição conscientemente. Cancelar abandona o rascunho sem aplicar nada.
+**Alteração em outra aba:** use **Revisar / tentar novamente**. Confira as diferenças antes de aplicar sua edição; o rascunho é preservado.
 
 **Painel antigo após atualização:** recarregue o navegador e confira se o frontend da versão nova foi incluído na instalação. O build já acompanha o ZIP.
 

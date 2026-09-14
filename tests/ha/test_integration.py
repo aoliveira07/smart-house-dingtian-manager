@@ -4,6 +4,7 @@ import asyncio
 from copy import deepcopy
 
 from homeassistant.core import CoreState
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_mqtt_message
@@ -67,11 +68,13 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
     await manager.port.sync_subscriptions()
     mid = next(iter(manager.state["modules"]))
     data = deepcopy(manager.state["modules"][mid])
-    data["channels"][0]["enabled"] = True
+    kitchen = ar.async_get(hass).async_create("Cozinha")
+    data["channels"][0].update(enabled=True, area_id=kitchen.id)
     data["channels"][6].update(enabled=True, entity_type="switch")
     await manager.mutate("save", 1, data)
     assert manager.state["error"] is None
     assert hass.states.get("light.cabeado1_r1") is not None
+    assert er.async_get(hass).async_get("light.cabeado1_r1").area_id == kitchen.id
     assert hass.states.get("switch.cabeado1_r7") is not None
     assert not any("/in/" in call.args[0] for call in mqtt_mock.async_publish.call_args_list)
     # Explicit rename changes the HA registry name, preserving unique_id and ID.
@@ -106,6 +109,7 @@ async def test_actual_mqtt_entities_lifecycle(hass, mqtt_mock):
     assert manager.state["error"] is None
     assert hass.states.get("light.bancada") is None
     assert hass.states.get("switch.cabeado1_r1") is not None
+    assert er.async_get(hass).async_get("switch.cabeado1_r1").area_id == kitchen.id
     # Revert the domain and recover its last externally assigned entity_id.
     data = deepcopy(manager.state["modules"][mid])
     data["channels"][0]["entity_type"] = "light"

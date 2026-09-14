@@ -27,6 +27,7 @@ class FakeHA:
         self.subs = {}
         self.entities = {}
         self.devices = {}
+        self.areas = [{"area_id": "cozinha", "name": "Cozinha"}, {"area_id": "sala", "name": "Sala"}]
         self.discovery = {}
 
     async def is_admin(self, uid):
@@ -44,6 +45,8 @@ class FakeHA:
             return {key: self.entities[key] for key in data["entity_ids"]}
         if kind == "config/device_registry/list":
             return list(self.devices.values())
+        if kind == "config/area_registry/list":
+            return self.areas
         if kind == "get_states":
             return []
         if kind == "mqtt/subscribe":
@@ -51,7 +54,7 @@ class FakeHA:
             self.subs[ident] = (data["topic"], callback)
             return ident
         if kind == "config/entity_registry/update":
-            self.entities[data["entity_id"]]["name"] = data["name"]
+            self.entities[data["entity_id"]].update({k: data[k] for k in ("name", "area_id") if k in data})
         if kind == "config/device_registry/update":
             self.devices[data["device_id"]]["name_by_user"] = data["name_by_user"]
 
@@ -81,6 +84,7 @@ class FakeHA:
                 did = config["device"]["identifiers"][0]
                 self.devices[did] = {"id": did, "identifiers": [["mqtt", did]]}
                 self.entities[eid] = {
+                    **self.entities.get(eid, {}),
                     "entity_id": eid,
                     "unique_id": config["unique_id"],
                     "platform": "mqtt",
@@ -103,6 +107,70 @@ async def setup(tmp_path, count=8):
     await port.sync_subscriptions()
     mid = next(iter(manager.state["modules"]))
     return client, port, manager, mid
+
+
+async def test_area_persists_before_enable_moves_entity_and_survives_restart(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["area_id"] = "cozinha"
+    await manager.mutate("save", 1, module)
+    assert not client.published
+    assert manager.snapshot()["areas"][0]["name"] == "Cozinha"
+    module["channels"][0]["enabled"] = True
+    await manager.mutate("save", 2, module)
+    assert manager.state["error"] is None
+    assert client.entities["light.cabeado1_r1"]["area_id"] == "cozinha"
+    # Another channel is not moved along with R1; the module device has no area mutation.
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(area_id="sala", entity_type="switch")
+    await manager.mutate("save", 3, module, True)
+    assert manager.state["error"] is None
+    assert client.entities["switch.cabeado1_r1"]["area_id"] == "sala"
+    restarted = Manager(port)
+    await restarted.load()
+    assert restarted.state["modules"][mid]["channels"][0]["area_id"] == "sala"
+    # External HA edits are read back instead of being overwritten by reconcile.
+    client.entities["switch.cabeado1_r1"]["area_id"] = "cozinha"
+    await port.registries()
+    await manager.reconcile()
+    assert manager.snapshot()["modules"][mid]["channels"][0]["area_id"] == "cozinha"
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["area_id"] = None
+    await manager.mutate("save", 4, module)
+    assert client.entities["switch.cabeado1_r1"]["area_id"] is None
+    assert not any("/in/" in p[0] for p in client.published)
+
+
+async def test_missing_area_rejected_without_persisting_or_publishing(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["area_id"] = "area_removida"
+    with pytest.raises(ManagerError, match="Cômodo"):
+        await manager.mutate("save", 1, module)
+    assert manager.state["revision"] == 1
+    assert not client.published
+
+
+async def test_area_failure_is_journaled_and_reconciled(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    original = client.call
+
+    async def fail_area(kind, **data):
+        if kind == "config/entity_registry/update" and "area_id" in data:
+            raise RuntimeError("HA temporarily unavailable")
+        return await original(kind, **data)
+
+    client.call = fail_area
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(enabled=True, area_id="cozinha")
+    await manager.mutate("save", 1, module)
+    assert manager.state["error"]
+    assert manager.state["name_updates"][-1]["area_id"] == "cozinha"
+    client.call = original
+    await manager.reconcile()
+    assert manager.state["error"] is None
+    assert client.entities["light.cabeado1_r1"]["area_id"] == "cozinha"
+    assert not any("/in/" in p[0] for p in client.published)
 
 
 @pytest.mark.parametrize("count", [8, 16, 32])

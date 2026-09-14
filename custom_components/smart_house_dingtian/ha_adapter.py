@@ -6,6 +6,7 @@ from copy import deepcopy
 
 from homeassistant.components import mqtt
 from homeassistant.core import callback
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -71,6 +72,7 @@ class HAPort:
         """Read HA overrides; explicit pending renames win until applied."""
         updates = state.get("name_updates", [])
         pending = {(x["module_uuid"], x.get("number")) for x in updates}
+        pending_areas = {(x["module_uuid"], x.get("number")) for x in updates if "area_id" in x}
         for module in state["modules"].values():
             device = dr.async_get(self.hass).async_get_device(
                 identifiers={("mqtt", f"shd_{module['module_uuid']}")}
@@ -100,6 +102,11 @@ class HAPort:
                         c["last_entity_ids"][domain] = entry.entity_id
                         if (
                             domain == c["entity_type"]
+                            and (module["module_uuid"], c["number"]) not in pending_areas
+                        ):
+                            c["area_id"] = entry.area_id
+                        if (
+                            domain == c["entity_type"]
                             and entry.name
                             and (module["module_uuid"], c["number"]) not in pending
                         ):
@@ -107,6 +114,10 @@ class HAPort:
 
     def decorate(self, state):
         self.refresh(state)
+        state["areas"] = sorted(
+            ({"area_id": a.id, "name": a.name} for a in ar.async_get(self.hass).async_list_areas()),
+            key=lambda a: a["name"].casefold(),
+        )
         state["broker_connected"] = self.connected
         state["discovery_prefix"] = self.prefix
         state["pending_topics"] = [t for t, r in state["owned_topics"].items() if not r.get("applied")]
@@ -140,6 +151,10 @@ class HAPort:
             for a, b in zip(old["channels"], module["channels"], strict=True):
                 if a["display_name"] != b["display_name"]:
                     changes.append({"module_uuid": mid, "number": b["number"], "name": b["display_name"]})
+                if a.get("area_id") != b.get("area_id") or (
+                    b["enabled"] and (not a["enabled"] or a["entity_type"] != b["entity_type"])
+                ):
+                    changes.append({"module_uuid": mid, "number": b["number"], "area_id": b.get("area_id")})
         return changes
 
     async def apply_names(self, changes):
@@ -149,7 +164,9 @@ class HAPort:
                 c = module["channels"][change["number"] - 1]
                 entry = self.registry_entry(module, c)
                 if entry:
-                    er.async_get(self.hass).async_update_entity(entry.entity_id, name=change["name"])
+                    er.async_get(self.hass).async_update_entity(
+                        entry.entity_id, **{k: change[k] for k in ("name", "area_id") if k in change}
+                    )
             else:
                 device = dr.async_get(self.hass).async_get_device(
                     identifiers={("mqtt", f"shd_{module['module_uuid']}")}
@@ -188,6 +205,12 @@ class HAPort:
                         yield None, item.get("unique_id"), item.get("command_topic")
 
     async def preflight(self, state, targets):
+        for module in state["modules"].values():
+            if module["deleted"]:
+                continue
+            for c in module["channels"]:
+                if c.get("area_id") and ar.async_get(self.hass).async_get_area(c["area_id"]) is None:
+                    raise ManagerError("Cômodo não existe mais no Home Assistant. Selecione outra área.")
         registry = er.async_get(self.hass)
         for record in targets.values():
             module = state["modules"][record["module_uuid"]]
@@ -301,6 +324,7 @@ class HAPort:
         self.unsubs.append(
             self.hass.bus.async_listen(dr.EVENT_DEVICE_REGISTRY_UPDATED, self.registry_changed)
         )
+        self.unsubs.append(self.hass.bus.async_listen(ar.EVENT_AREA_REGISTRY_UPDATED, self.registry_changed))
         await self.sync_subscriptions()
         self.schedule_reconcile(force=True)
 

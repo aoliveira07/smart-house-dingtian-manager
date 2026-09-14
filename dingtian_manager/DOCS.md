@@ -1,4 +1,4 @@
-# Instalação e uso — aplicativo 1.0.1
+# Instalação e uso — aplicativo 1.1.0
 
 ## Requisitos
 
@@ -9,19 +9,25 @@ Home Assistant OS/Supervisor, Core 2026.9.2+, CPU amd64 ou aarch64, administrado
 1. Abra **Configurações → Aplicativos → Instalar aplicativo**.
 2. Em **⋮ → Repositórios**, adicione `https://github.com/aoliveira07/smart-house-dingtian-manager`.
 3. Atualize a loja e abra **Smart House Dingtian Manager**.
-4. Instale a **1.0.1**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
+4. Instale a **1.1.0**, aguarde a compilação, inicie e abra a interface Web. Habilite a barra lateral se desejar.
 
 Não instale o ZIP de integração pelo HACS para obter o aplicativo. Não é necessário reiniciar o Core para instalar este aplicativo. Seu inventário começa vazio.
 
-Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.0.1.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
+Alternativa para instalação local: extraia `smart-house-dingtian-manager-addon-1.1.0.zip` e coloque a pasta `dingtian_manager` em `/addons/dingtian_manager`, acessível pelo método administrativo já usado na instalação. Atualize a loja e procure em Aplicativos locais. O ZIP não é um backup do HA e não é enviado ao botão Restaurar backup.
 
 ## Primeiro módulo e teste
 
 Cadastre serial e capacidade. Esses campos ficam fixos depois de salvar para impedir comandos baseados em edições ainda não confirmadas. Use um nome provisório se necessário. Abra o módulo e espere a disponibilidade `online`.
 
-Cada canal possui **Testar relé — comando real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. O clique envia o comando diretamente, sem janela de confirmação do navegador. Observe a carga localmente em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
+Cada canal possui um **toggle de teste real** antes do nome. Se o estado é desconhecido, escolha Ligar/Desligar explicitamente; nunca é apresentado um OFF presumido. O clique envia o comando diretamente, sem janela de confirmação do navegador. Observe a carga localmente em condições seguras. O painel aguarda uma mensagem de estado nova e não retida correspondente à intenção por até 15 segundos. Timeout ou falha não significa que a carga esteja desligada. Não há reenvio.
 
-Depois de identificar a carga, preencha nome e tipo, marque **Usar canal** e salve. Canais não utilizados podem ficar com nome/tipo vazios. Testar não cria entidades; salvar não envia comandos. Cancelar descarta edições de cadastro, mas mantém o estado físico resultante dos comandos. Canais não utilizados que reportam ON permanecem visíveis, com aviso ao sair.
+Depois de identificar a carga, preencha nome, cômodo e tipo, e marque **Usar**. As alterações são salvas após uma breve pausa (600 ms), ao sair do campo ou imediatamente nos seletores. Aguarde **✓ Salvo**. Não é necessário um botão de salvar. Canais não utilizados podem ficar com nome/tipo vazios. Editar não envia comandos ON/OFF.
+
+**Cômodo:** selecione uma área já cadastrada no Home Assistant. A escolha afeta somente a entidade desse relé, sem mover o módulo inteiro. **Padrão do módulo** remove a área própria da entidade, deixando o HA herdar a área do dispositivo, quando houver. O campo pode ser preenchido antes de habilitar o canal e é preservado ao trocar Luz/Switch. Gerencie as áreas em Configurações do HA.
+
+**Proteção de edição:** durante uma gravação, novos caracteres ficam no rascunho e são enviados na sequência. Navegar entre módulos aguarda o salvamento. Em falhas, a edição fica na tela e em rascunho local do navegador; use **Revisar / tentar novamente**. Conflitos entre abas mostram as alterações antes de aplicá-las sobre o cadastro atual. Se o navegador bloquear armazenamento local, mantenha a página aberta até confirmar o salvamento. Limpar os dados do navegador remove rascunhos locais; o cadastro já salvo permanece no HA.
+
+Detalhes de estado, IDs e tópicos ficam em **Detalhes técnicos dos canais**. Canais não utilizados que reportam ON permanecem visíveis, com aviso ao sair. Navegar não desliga relés nem desfaz testes anteriores.
 
 ## Atualizar e fazer backup
 
@@ -55,6 +61,6 @@ Para desinstalar definitivamente e limpar as entidades deste gerenciador, use **
 - **Broker desconectado:** confira MQTT em Dispositivos e serviços. O gerenciador tenta reconectar a API e sincronizar Discovery, sem reenviar comandos de relé.
 - **Conflito MQTT/entity_id:** resolva individualmente o legado ou Discovery concorrente. O gerenciador não aceita silenciosamente um ID com sufixo.
 - **Resultado físico não confirmado:** observe a carga antes de decidir o próximo comando; não suponha OFF.
-- **Cadastro alterado:** cancele/recarregue o formulário para obter a revisão salva por outra sessão.
+- **Cadastro alterado:** use Revisar / tentar novamente para conferir a edição e a versão salva pela outra sessão.
 
-A versão 1.0.1 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.
+A versão 1.1.0 ainda exige homologação física pelo responsável pela instalação. Os testes publicados usam dados fictícios e transporte MQTT isolado.

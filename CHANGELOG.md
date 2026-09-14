@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Módulos em linhas compactas com busca e layout mobile.
+- Canais compactos; estado textual e IDs recolhidos em detalhes técnicos.
+- Salvamento automático de nomes, tipo, uso e cômodo, com status e rascunho recuperável.
+- Proteção de edição durante gravações lentas, falhas e conflitos entre abas.
+- Cômodo por relé integrado às áreas do HA, com IDs preservados e sem enviar ON/OFF ao editar.
+
+
 ## 1.0.1
 
 - Toggle de relé envia Ligar/Desligar diretamente ao clicar, sem diálogo de confirmação do navegador.

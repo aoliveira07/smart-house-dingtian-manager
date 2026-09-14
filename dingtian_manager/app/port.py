@@ -18,6 +18,7 @@ class RemotePort:
         self.manager = None
         self.entities = {}
         self.devices = {}
+        self.areas = {}
         self.states = {}
         self.received = {}
         self.discovery_seen = {}
@@ -97,10 +98,11 @@ class RemotePort:
             raise
 
     async def registries(self):
-        entities, devices, states = await asyncio.gather(
+        entities, devices, states, areas = await asyncio.gather(
             self.client.call("config/entity_registry/list"),
             self.client.call("config/device_registry/list"),
             self.client.call("get_states"),
+            self.client.call("config/area_registry/list"),
         )
         # Registry list omits unique_id in HA; get each MQTT entry's full details.
         mqtt_entities = [e for e in entities if e.get("platform") == "mqtt"]
@@ -114,6 +116,7 @@ class RemotePort:
         self.entities = {e["entity_id"]: e for e in entities}
         self.entities.update({e["entity_id"]: e for e in details.values() if e})
         self.devices = {d["id"]: d for d in devices}
+        self.areas = {a["area_id"]: {"area_id": a["area_id"], "name": a["name"]} for a in areas}
         self.states = {s["entity_id"]: s for s in states}
 
     def device(self, module):
@@ -146,6 +149,9 @@ class RemotePort:
 
     def refresh(self, state):
         pending = {(x["module_uuid"], x.get("number")) for x in state.get("name_updates", [])}
+        pending_areas = {
+            (x["module_uuid"], x.get("number")) for x in state.get("name_updates", []) if "area_id" in x
+        }
         for module in state["modules"].values():
             mid = module["module_uuid"]
             device = self.device(module)
@@ -170,6 +176,8 @@ class RemotePort:
                     if creating and entry["entity_id"] != creating["payload"]["default_entity_id"]:
                         continue
                     channel["last_entity_ids"][domain] = entry["entity_id"]
+                    if domain == channel["entity_type"] and (mid, channel["number"]) not in pending_areas:
+                        channel["area_id"] = entry.get("area_id")
                     if (
                         domain == channel["entity_type"]
                         and entry.get("name")
@@ -179,8 +187,9 @@ class RemotePort:
 
     def decorate(self, state):
         self.refresh(state)
+        state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.0.1"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.1.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -216,6 +225,10 @@ class RemotePort:
             for a, b in zip(old["channels"], module["channels"], strict=True):
                 if a["display_name"] != b["display_name"]:
                     changes.append({"module_uuid": mid, "number": b["number"], "name": b["display_name"]})
+                if a.get("area_id") != b.get("area_id") or (
+                    b["enabled"] and (not a["enabled"] or a["entity_type"] != b["entity_type"])
+                ):
+                    changes.append({"module_uuid": mid, "number": b["number"], "area_id": b.get("area_id")})
         return changes
 
     async def apply_names(self, changes):
@@ -225,7 +238,9 @@ class RemotePort:
                 entry = self.registry_entry(module, module["channels"][change["number"] - 1])
                 if entry:
                     await self.client.call(
-                        "config/entity_registry/update", entity_id=entry["entity_id"], name=change["name"]
+                        "config/entity_registry/update",
+                        entity_id=entry["entity_id"],
+                        **{k: change[k] for k in ("name", "area_id") if k in change},
                     )
             else:
                 device = self.device(module)
@@ -259,6 +274,12 @@ class RemotePort:
         if self.error:
             raise ManagerError(self.error)
         await self.registries()
+        for module in state["modules"].values():
+            if module["deleted"]:
+                continue
+            for channel in module["channels"]:
+                if channel.get("area_id") and channel["area_id"] not in self.areas:
+                    raise ManagerError("Cômodo não existe mais no Home Assistant. Selecione outra área.")
         for record in targets.values():
             module = state["modules"][record["module_uuid"]]
             channel = module["channels"][record["number"] - 1]
