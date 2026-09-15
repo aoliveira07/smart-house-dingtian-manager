@@ -1,9 +1,10 @@
-# Smart House Dingtian Manager 1.4.1
+# Smart House Dingtian Manager 1.5.0
 
-- Controles da seleção e filtro por cômodo em uma única linha, com rótulo ao lado do seletor e menor espaçamento.
-- Removidos tooltip do botão de saída, mensagens de salvamento normal e contagem de comandos enviados. Falhas continuam visíveis e permitem tentar novamente.
-- Adicionar módulo e Exportar para Excel têm a mesma cor e largura do conjunto Abrir saídas + editar + remover, alinhados à direita.
-- Exportação somente ao clicar, com nome Organização cabeados.xlsx. Colunas: Nome do módulo, Saída do módulo, Nome, Cômodo e Tipo.
-- Mantidos salvamento automático, envio imediato e feedback após dois segundos, com retorno visual a Desligado quando não chega resposta nova.
+- Layout específico para celular, preservando a apresentação no computador.
+- Adicionar módulo, Abrir saídas e Exportar para Excel ocupam toda a largura; editar e remover ficam na linha de Conectado.
+- Cada saída apresenta Saída, Tipo e Usar no topo, nome e cômodo abaixo, e botão Ligado/Desligado largo no final.
+- Filtro de cômodo inteiro visível e comandos da seleção na linha seguinte, sem rolagem horizontal.
+- Rolagem vertical da página Ingress no celular, permitindo alcançar todos os módulos e a exportação.
+- Mantidos salvamento automático, Excel e comportamento de comando/feedback da versão anterior.
 
-Validação: testes Python e frontend, verificação visual e CI com Home Assistant e builds amd64/aarch64.
+Validação: testes Python e frontend, conferência responsiva e CI com Home Assistant e containers amd64/aarch64.

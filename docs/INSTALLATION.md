@@ -1,4 +1,4 @@
-# Dingtian Manager 1.4.1
+# Dingtian Manager 1.5.0
 
 Instale ou atualize pela loja de Aplicativos do Home Assistant. Repositório: https://github.com/aoliveira07/smart-house-dingtian-manager. Requer Core 2026.9.2+, Supervisor e MQTT configurado com Discovery.
 
@@ -20,7 +20,7 @@ Não carregue o YAML de referência junto com entidades de mesmo unique_id geren
 
 Use backup do HA para recuperação integral. O Excel é um relatório das saídas cadastradas, não um backup restaurável. Dados persistem em /data. Remover uma saída ou módulo limpa as entidades correspondentes. O painel é restrito a administradores via Ingress.
 
-## Interface 1.4.1
+## Interface 1.5.0
 
 - Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
 - Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.

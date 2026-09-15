@@ -76,4 +76,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           printf '\nCI da release: %s/actions/runs/%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> docs/RELEASE_NOTES.md
-          gh release create v1.4.1 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.4.1 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md
+          gh release create v1.5.0 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.5.0 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md

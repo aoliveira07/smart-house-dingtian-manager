@@ -196,7 +196,7 @@ class RemotePort:
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.4.1"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.5.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (

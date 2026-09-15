@@ -1,4 +1,4 @@
-# Smart House Dingtian Manager — 1.4.1
+# Smart House Dingtian Manager — 1.5.0
 
 Aplicativo para Home Assistant OS com Supervisor, módulos Dingtian de 8, 16 ou 32 saídas, visual Petróleo e entidades MQTT independentes.
 
@@ -10,7 +10,7 @@ O projeto inclui o aplicativo principal em dingtian_manager e a integração de 
 
 Homologação física permanece sob responsabilidade do instalador; os testes do projeto usam MQTT simulado.
 
-## Interface 1.4.1
+## Interface 1.5.0
 
 - Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
 - Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
