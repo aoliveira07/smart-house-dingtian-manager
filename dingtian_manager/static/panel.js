@@ -274,17 +274,17 @@ export class DingtianPanel extends HTMLElement {
   }
   matchesArea(m,c) {return this.areaFilter===null || (c.area_id || m.area_id || '')===this.areaFilter;}
   selectedModules() {return Object.values(this.data?.modules||{}).filter(m=>!m.deleted && (!this.active || m.module_uuid===this.active) && (this.active || `${m.display_name} ${m.serial} ${m.technical_id}`.toLocaleLowerCase().includes(this.search)));}
-  selectedChannels(m) {return m.channels.filter(c=>c.enabled&&this.matchesArea(m,c));}
+  selectedChannels(m) {return m.channels.filter(c=>this.matchesArea(m,c));}
   filterBar(main) {
     const select=el('select',{'aria-label':'Filtrar por cômodo',onchange:e=>{this.areaFilter=e.target.value==='*'?null:e.target.value;this.groupMessage='';this.updateFilter();}},el('option',{value:'*'},'Todos os cômodos'),el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));select.value=this.areaFilter??'*';
-    main.append(el('section',{className:'filter-bar'},el('div',{className:'actions selection-actions',title:'Aciona somente as saídas marcadas como Usar neste filtro.'},button('Ligar seleção',()=>this.operateGroup('ON'),'group-on'),button('Desligar seleção',()=>this.operateGroup('OFF'),'group-off')),el('label',{},'Filtrar por cômodo',select)),el('p',{'data-group-message':'',className:'helper',role:'status'},this.groupMessage));
+    main.append(el('section',{className:'filter-bar'},el('div',{className:'actions selection-actions',title:'Aciona as saídas exibidas neste filtro.'},button('Ligar seleção',()=>this.operateGroup('ON'),'group-on'),button('Desligar seleção',()=>this.operateGroup('OFF'),'group-off')),el('label',{},'Filtrar por cômodo',select)),el('p',{'data-group-message':'',className:'helper',role:'status'},this.groupMessage));
   }
   updateFilter() {
     if(!this.data)return;
     const mods=this.selectedModules(), channels=mods.flatMap(m=>this.selectedChannels(m));
     const summary=this.shadowRoot.querySelector('[data-summary]');
     if(summary)summary.textContent=`${channels.filter(c=>c.entity_type==='light').length} luzes · ${channels.length} entradas em uso`;
-    const actions=this.shadowRoot.querySelector('.selection-actions');if(actions)actions.hidden=this.areaFilter===null;
+    const actions=this.shadowRoot.querySelector('.selection-actions');if(actions)actions.hidden=false;
     const current=this.draft;
     for(const row of this.shadowRoot.querySelectorAll('[data-channel]'))row.hidden=current?!this.matchesArea(current,current.channels[Number(row.dataset.channel)-1]):false;
     const blocked=!channels.length||this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.size||this.data.error||!this.data.broker_connected;
@@ -292,7 +292,7 @@ export class DingtianPanel extends HTMLElement {
     const message=this.shadowRoot.querySelector('[data-group-message]');if(message){message.textContent=this.groupMessage;message.hidden=!this.groupMessage;}
   }
   async operateGroup(payload) {
-    if(!this.active||this.areaFilter===null||this.groupBusy||this.dirty||this.saving||this.busy||this.localPending.size)return;
+    if(!this.active||this.groupBusy||this.dirty||this.saving||this.busy||this.localPending.size)return;
     const ids=this.selectedModules().filter(m=>this.selectedChannels(m).length).map(m=>m.module_uuid);
     if(!ids.length)return;
     const baselines=new Map(ids.map(id=>[id,structuredClone(this.data.modules[id])]));
@@ -384,7 +384,7 @@ export class DingtianPanel extends HTMLElement {
       const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);}});
       const type=el('select',{'aria-label':`Tipo R${c.number}`,onchange:e=>{c.entity_type=e.target.value;this.changed(true);}},el('option',{value:''},'Selecionar'),el('option',{value:'light'},'Luz'),el('option',{value:'switch'},'Switch'));type.value=c.entity_type;
       const display=el('input',{value:c.display_name,maxLength:120,'aria-label':`Nome R${c.number}`,oninput:e=>{c.display_name=e.target.value;this.changed();},onblur:()=>this.save()});
-      const area=el('select',{'aria-label':`Cômodo R${c.number}`,onchange:e=>{c.area_id=e.target.value||null;this.changed(true);}},el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));
+      const area=el('select',{'aria-label':`Cômodo R${c.number}`,onchange:e=>{const next=e.target.value||null;if(next===c.area_id)return;const areaName=id=>(this.data.areas||[]).find(a=>a.area_id===id)?.name||'Sem cômodo';if(!window.confirm(`Alterar o cômodo de ${c.display_name} de ${areaName(c.area_id)} para ${areaName(next)}? O código da entidade será mantido.`)){e.target.value=c.area_id||'';return;}c.area_id=next;this.changed(true);}},el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));
       if(c.area_id && !(this.data.areas||[]).some(a=>a.area_id===c.area_id))area.append(el('option',{value:c.area_id},'Área removida · selecione outra'));
       area.value=c.area_id||'';
       const live=current?.channels[c.number-1]||c;

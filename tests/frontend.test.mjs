@@ -50,7 +50,7 @@ test('navigation flushes latest text without manual save or relay operations',as
 test('type, area and usage automatically persist as configuration only',async()=>{
   const m=moduleData(1,8);m.channels[0].enabled=true;
   const {node,requests}=await panel([m]);node.navigate(m.module_uuid);
-  window.confirm=()=>{throw new Error('Unexpected dialog');};
+  window.confirm=()=>true;
   for(const [label,value] of [['Tipo R1','switch'],['Cômodo R1','cozinha']]){
     const input=node.shadowRoot.querySelector(`[aria-label="${label}"]`);input.value=value;input.dispatchEvent(new Event('change'));await tick();
   }
@@ -178,12 +178,12 @@ test('draft ownership is unique per tab and survives reload on local HTTP',async
 });
 
 
-test('room filter shows scoped group actions only after selecting a room',async()=>{
+test('room filter scopes group actions and keeps all-room actions available',async()=>{
  const a=moduleData(1,8),b=moduleData(2,8);
  a.channels[0].enabled=a.channels[1].enabled=b.channels[0].enabled=true;
  a.channels[0].area_id='cozinha';a.channels[1].area_id='sala';b.area_id='sala';
  const {node,requests}=await panel([a,b]);await node.navigate(a.module_uuid);
- assert.equal(node.shadowRoot.querySelector('.selection-actions').hidden,true);
+ assert.equal(node.shadowRoot.querySelector('.selection-actions').hidden,false);
  const filter=node.shadowRoot.querySelector('[aria-label="Filtrar por cômodo"]');filter.value='cozinha';filter.dispatchEvent(new Event('change'));
  assert.equal(node.shadowRoot.querySelector('.selection-actions').hidden,false);
  assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,1);
@@ -231,4 +231,26 @@ test('overview edits serial and name together, preserving channels and showing r
  dialog.querySelector('form').dispatchEvent(new Event('submit',{cancelable:true}));await tick();
  const req=requests.at(-1);assert.equal(req.action,'edit_module');assert.deepEqual(req.data,{module_uuid:m.module_uuid,display_name:'Novo quadro',serial:'00999'});
  assert.match(dialog.textContent,/já cadastrado/);assert.equal(dialog.querySelector('[aria-label="Número de série"]').value,'00999');
+});
+
+
+test('room change asks before editing; cancel preserves room and usage; accept keeps identity',async()=>{
+ const m=moduleData(1,8);m.channels[0].area_id='sala';m.channels[0].enabled=true;
+ const {node,requests}=await panel([m]);await node.navigate(m.module_uuid);
+ let question='';window.confirm=text=>{question=text;return false;};
+ let select=node.shadowRoot.querySelector('[aria-label="Cômodo R1"]');select.value='cozinha';select.dispatchEvent(new Event('change'));await tick();
+ assert.match(question,/Sala para Cozinha/);assert.equal(select.value,'sala');assert.equal(node.draft.channels[0].area_id,'sala');assert.equal(requests.filter(r=>r.action==='save').length,0);
+ window.confirm=()=>true;select.value='cozinha';select.dispatchEvent(new Event('change'));await tick();
+ assert.equal(node.draft.channels[0].area_id,'cozinha');assert.equal(node.draft.channels[0].enabled,true);assert.equal(node.draft.channels[0].unique_id,m.channels[0].unique_id);
+});
+
+test('all rooms and unassigned room allow group actions on visible unused outputs',async()=>{
+ const m=moduleData(1,8);m.channels[0].area_id='sala';
+ const {node,requests}=await panel([m]);await node.navigate(m.module_uuid);
+ const original=node.hass.callWS;node.hass.callWS=async msg=>{if(msg.action==='operate_group'){requests.push(msg);return {sent:[]};}return original(msg);};
+ assert.equal(node.shadowRoot.querySelector('.group-on').disabled,false);node.shadowRoot.querySelector('.group-on').click();await tick();
+ assert.equal(requests.find(r=>r.action==='operate_group').data.area_id,null);
+ const filter=node.shadowRoot.querySelector('[aria-label="Filtrar por cômodo"]');filter.value='';filter.dispatchEvent(new Event('change'));
+ assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,7);assert.equal(node.shadowRoot.querySelector('.group-off').disabled,false);
+ node.shadowRoot.querySelector('.group-off').click();await tick();assert.equal(requests.filter(r=>r.action==='operate_group').at(-1).data.area_id,'');
 });

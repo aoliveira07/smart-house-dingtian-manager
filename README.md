@@ -1,4 +1,4 @@
-# Smart House Dingtian Manager — 1.5.0
+# Smart House Dingtian Manager — 1.6.0
 
 Aplicativo para Home Assistant OS com Supervisor, módulos Dingtian de 8, 16 ou 32 saídas, visual Petróleo e entidades MQTT independentes.
 
@@ -10,13 +10,20 @@ O projeto inclui o aplicativo principal em dingtian_manager e a integração de 
 
 Homologação física permanece sob responsabilidade do instalador; os testes do projeto usam MQTT simulado.
 
-## Interface 1.5.0
+## Interface 1.6.0
 
 - Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
 - Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
 - Exportar para Excel (.xlsx): saídas cadastradas, com Nome do módulo, Saída do módulo, Nome, Cômodo e Tipo (Luz ou Switch). Cabeçalho congelado e filtro nas colunas.
-- Tela de saídas com filtro alinhado ao cômodo; comandos da seleção aparecem após escolher um cômodo e respeitam Usar.
+- Tela de saídas com filtro alinhado ao cômodo; comandos coletivos atuam nas saídas exibidas, inclusive em Todos os cômodos e Sem cômodo.
 - Botão único Ligado/Desligado: envia imediatamente e mostra o comando por dois segundos. Depois usa novo feedback MQTT; sem retorno volta visualmente a Desligado, sem enviar OFF automático.
 - Entidades MQTT independentes e personalizações preservadas.
 
 Validação: 53 testes Python, 20 testes da interface; CI também valida Home Assistant real e containers amd64/aarch64.
+
+## Validação do cadastro
+
+- Nomes de saídas únicos em todos os módulos, inclusive antes de marcar Usar. Maiúsculas e espaços extras não permitem duplicatas; nomes padrão de saídas ainda não configuradas são dispensados.
+- Alterar cômodo pede confirmação antes de salvar, preservando código, identidade e marcação Usar da entidade.
+- Ligar seleção e Desligar seleção funcionam em Todos os cômodos e Sem cômodo, atuando nas saídas exibidas, inclusive as desmarcadas em Usar.
+- Cadastros antigos não são renomeados automaticamente: nomes conflitantes precisam ser corrigidos ao editar o módulo.

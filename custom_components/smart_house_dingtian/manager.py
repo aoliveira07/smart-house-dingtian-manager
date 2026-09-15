@@ -10,6 +10,7 @@ from .models import (
     name,
     new_module,
     serial,
+    unique_channel_names,
     unique_module_name,
     update_module,
     validate_storage,
@@ -110,6 +111,7 @@ class Manager:
                         for a, b in zip(module["channels"], updated["channels"], strict=True)
                     )
                     desired["modules"][mid] = updated
+                    unique_channel_names(desired, updated)
                 else:
                     raise ManagerError("Operação inválida.")
             if destructive and not confirmed:
@@ -247,11 +249,11 @@ class Manager:
                 if not m or m["deleted"]:
                     raise ManagerError("Módulo não encontrado.")
                 for c in m["channels"]:
-                    if not c["enabled"] or (area is not None and (c.get("effective_area_id") or "") != area):
+                    if area is not None and (c.get("effective_area_id") or c.get("area_id") or "") != area:
                         continue
                     selected.append((mid, c["number"]))
             if not selected:
-                raise ManagerError("Nenhum canal em uso neste filtro.")
+                raise ManagerError("Nenhuma saída neste filtro.")
             sent = []
             for mid, number in selected:
                 m = self.state["modules"][mid]

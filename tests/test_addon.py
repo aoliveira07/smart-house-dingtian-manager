@@ -465,7 +465,7 @@ async def test_serial_replacement_rejects_duplicate_and_recovers_partial_publish
     assert not any("/in/" in topic for topic, *_ in client.published)
 
 
-async def test_group_commands_filter_enabled_channels_inherit_area_and_never_replay(tmp_path):
+async def test_group_commands_filter_visible_channels_inherit_area_and_never_replay(tmp_path):
     client, port, manager, mid = await setup(tmp_path)
     module = deepcopy(manager.state["modules"][mid])
     module["channels"][0].update(enabled=True, area_id="cozinha")
@@ -475,12 +475,14 @@ async def test_group_commands_filter_enabled_channels_inherit_area_and_never_rep
     client.receive("/Cabeado/relay00123/out/lwt_availability", "online")
     request = {"module_ids": [mid], "area_id": "cozinha", "payload": "ON"}
     result = await manager.operate_group(request, True, 2)
-    assert result["sent"] == [{"module_uuid": mid, "number": 1}]
-    assert [p for p in client.published if "/in/" in p[0]] == [("/Cabeado/relay00123/in/r1", "ON", 0, False)]
+    assert result["sent"] == [{"module_uuid": mid, "number": n} for n in (1, 3)]
+    assert [p for p in client.published if "/in/" in p[0]] == [
+        (f"/Cabeado/relay00123/in/r{n}", "ON", 0, False) for n in (1, 3)
+    ]
     # No device feedback is required; the next explicit command may immediately send OFF.
     await manager.operate_group({**request, "payload": "OFF"}, True, 2)
     await manager.reconcile()
-    assert len([p for p in client.published if "/in/" in p[0]]) == 2
+    assert len([p for p in client.published if "/in/" in p[0]]) == 4
     port.tests.close()
 
 
@@ -501,7 +503,7 @@ async def test_group_failure_reports_partial_send_without_retry(tmp_path):
     client.publish = fail
     result = await manager.operate_group({"module_ids": [mid], "area_id": None, "payload": "OFF"}, True, 2)
     assert result["sent"] == [{"module_uuid": mid, "number": 1}]
-    assert result["total"] == 3 and "interrompido" in result["error"]
+    assert result["total"] == 8 and "interrompido" in result["error"]
     assert len([p for p in client.published if "/in/" in p[0]]) == 1
     assert manager.state["error"] is None
     port.tests.close()
@@ -523,11 +525,11 @@ async def test_group_uses_inherited_device_area_and_rejects_stale_or_invalid_req
         await manager.operate_group(data, True, 1)
     with pytest.raises(ManagerError):
         await manager.operate_group(data, False, 2)
-    with pytest.raises(ManagerError, match="Nenhum canal"):
+    with pytest.raises(ManagerError, match="Nenhuma saída"):
         await manager.operate_group({**data, "area_id": "cozinha"}, True, 2)
     assert not any("/in/" in p[0] for p in client.published)
     result = await manager.operate_group(data, True, 2)
-    assert result["sent"] == [{"module_uuid": mid, "number": 1}]
+    assert result["sent"] == [{"module_uuid": mid, "number": n} for n in range(1, 9)]
     port.tests.close()
 
 
@@ -600,3 +602,38 @@ async def test_direct_commands_do_not_wait_for_state_or_availability(tmp_path):
     with pytest.raises(ManagerError):
         await manager.operate(mid, 1, "ON", True, 1, direct=True)
     assert len(client.published) == 2
+
+
+async def test_all_and_unassigned_group_controls_preserve_configuration(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(display_name="Luminária", area_id="sala", enabled=True)
+    await manager.mutate("save", 1, module)
+    before = deepcopy(manager.state)
+    for area, numbers in [("", range(2, 9)), (None, range(1, 9))]:
+        for payload in ("ON", "OFF"):
+            result = await manager.operate_group(
+                {"module_ids": [mid], "area_id": area, "payload": payload}, True, 2
+            )
+            assert result["sent"] == [{"module_uuid": mid, "number": n} for n in numbers]
+    assert manager.state == before
+    assert all(qos == 0 and not retain for topic, _, qos, retain in client.published if "/in/" in topic)
+
+
+async def test_area_change_preserves_registry_id_unique_id_topics_and_usage(tmp_path):
+    client, port, manager, mid = await setup(tmp_path)
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0].update(display_name="Cabeceira", enabled=True, area_id="sala")
+    await manager.mutate("save", 1, module)
+    eid = "light.cabeado1_r1"
+    entry = deepcopy(client.entities[eid])
+    before = deepcopy(manager.state["modules"][mid]["channels"][0])
+    module = deepcopy(manager.state["modules"][mid])
+    module["channels"][0]["area_id"] = "cozinha"
+    await manager.mutate("save", 2, module)
+    assert client.entities[eid]["unique_id"] == entry["unique_id"]
+    assert client.entities[eid]["area_id"] == "cozinha"
+    after = manager.state["modules"][mid]["channels"][0]
+    assert after["unique_id"] == before["unique_id"] and after["last_entity_ids"] == before["last_entity_ids"]
+    assert after["enabled"] is True
+    assert not any("/in/" in topic for topic, *_ in client.published)

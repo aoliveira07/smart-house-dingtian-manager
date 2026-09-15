@@ -325,3 +325,23 @@ async def test_default_entity_id_preserves_last_domain_id():
     c["last_entity_ids"]["light"] = "light.custom_admin_id"
     _, payload = discovery(manager.state, module, c, "custom")
     assert payload["default_entity_id"] == "light.custom_admin_id"
+
+
+async def test_channel_names_are_unique_across_modules_even_before_enable():
+    manager, port, first = await fresh()
+    data = deepcopy(manager.state["modules"][first])
+    data["channels"][0]["display_name"] = "Cabeceira"
+    await manager.mutate("save", 1, data)
+    await manager.mutate("create", 2, {"serial": "999", "channel_count": 8})
+    second = next(mid for mid in manager.state["modules"] if mid != first)
+    for mid, number in [(first, 2), (second, 1)]:
+        data = deepcopy(manager.state["modules"][mid])
+        data["channels"][number - 1]["display_name"] = "  CABECEIRA  "
+        before = deepcopy(manager.state)
+        with pytest.raises(ManagerError, match="Nome já utilizado"):
+            await manager.mutate("save", 3, data)
+        assert manager.state == before
+    data = deepcopy(manager.state["modules"][second])
+    data["channels"][0]["display_name"] = "Cabeceira hóspedes"
+    await manager.mutate("save", 3, data)
+    assert manager.state["modules"][second]["channels"][0]["unique_id"] == "Cabeado2-r1"

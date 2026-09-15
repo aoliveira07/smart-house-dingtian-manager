@@ -1,7 +1,7 @@
 """Constants for the manager (not firmware versions)."""
 
 DOMAIN = "smart_house_dingtian"
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 PANEL = "smart-house-dingtian"
 STORAGE_VERSION = 1
 SIGNAL = f"{DOMAIN}_updated"

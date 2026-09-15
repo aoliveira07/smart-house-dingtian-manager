@@ -54,6 +54,32 @@ def capacity(value):
     return value
 
 
+def unique_channel_names(state, module):
+    """Reserve configured names globally, including channels not yet enabled."""
+
+    def key(value):
+        return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+    def configured(channel):
+        return channel["enabled"] or channel["display_name"] not in ("", f"Saída {channel['number']}")
+
+    for channel in module["channels"]:
+        if not configured(channel):
+            continue
+        wanted = key(channel["display_name"])
+        for other in state["modules"].values():
+            if other["deleted"]:
+                continue
+            for candidate in other["channels"]:
+                if (other["module_uuid"], candidate["number"]) == (module["module_uuid"], channel["number"]):
+                    continue
+                if configured(candidate) and key(candidate["display_name"]) == wanted:
+                    raise ManagerError(
+                        f"Nome já utilizado: {channel['display_name']} — "
+                        f"{other['display_name']}, Saída {candidate['number']}. Escolha outro nome."
+                    )
+
+
 def initial():
     return {
         "schema_version": 1,

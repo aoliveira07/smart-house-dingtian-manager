@@ -138,14 +138,14 @@ async def test_standalone_application_real_ha_apis(
         result = await manager.operate_group(
             {"module_ids": [mid], "area_id": None, "payload": "OFF"}, True, 5
         )
-        assert result["sent"] == [{"module_uuid": mid, "number": 7}]
+        assert result["sent"] == [{"module_uuid": mid, "number": n} for n in range(1, 9)]
         await manager.mutate("delete", 5, {"module_uuid": mid}, True)
         assert manager.state["error"] is None
         assert not registry.async_get("light.minha_bancada")
         commands = [c.args[:4] for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]]
         assert commands == [
             ("/Cabeado/relay00123/in/r7", "ON", 0, False),
-            ("/Cabeado/relay00999/in/r7", "OFF", 0, False),
+            *[(f"/Cabeado/relay00999/in/r{n}", "OFF", 0, False) for n in range(1, 9)],
         ]
         await port.sync_subscriptions()
         assert len(port.subscriptions) == 1
