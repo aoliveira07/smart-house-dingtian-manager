@@ -1,10 +1,9 @@
-# Smart House Dingtian Manager 1.4.0
+# Smart House Dingtian Manager 1.4.1
 
-- Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
-- Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
-- Exportar para Excel (.xlsx): saídas cadastradas, com Nome do módulo, Saída do módulo, Nome, Cômodo e Tipo (Luz ou Switch). Cabeçalho congelado e filtro nas colunas.
-- Tela de saídas com filtro alinhado ao cômodo; comandos da seleção aparecem após escolher um cômodo e respeitam Usar.
-- Botão único Ligado/Desligado: envia imediatamente e mostra o comando por dois segundos. Depois usa novo feedback MQTT; sem retorno volta visualmente a Desligado, sem enviar OFF automático.
-- Entidades MQTT independentes e personalizações preservadas.
+- Controles da seleção e filtro por cômodo em uma única linha, com rótulo ao lado do seletor e menor espaçamento.
+- Removidos tooltip do botão de saída, mensagens de salvamento normal e contagem de comandos enviados. Falhas continuam visíveis e permitem tentar novamente.
+- Adicionar módulo e Exportar para Excel têm a mesma cor e largura do conjunto Abrir saídas + editar + remover, alinhados à direita.
+- Exportação somente ao clicar, com nome Organização cabeados.xlsx. Colunas: Nome do módulo, Saída do módulo, Nome, Cômodo e Tipo.
+- Mantidos salvamento automático, envio imediato e feedback após dois segundos, com retorno visual a Desligado quando não chega resposta nova.
 
-Validação: 53 testes Python, 20 testes da interface; CI também valida Home Assistant real e containers amd64/aarch64.
+Validação: testes Python e frontend, verificação visual e CI com Home Assistant e builds amd64/aarch64.

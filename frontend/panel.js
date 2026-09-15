@@ -15,6 +15,9 @@ const css = `
  header{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--divider-color)}header>.primary,header>.back-modules{justify-self:end}.header-center{text-align:center}.header-center h2{font-size:22px;margin:0}.header-center p{margin:2px 0 0}.channel,.channel-head,.filter-bar{grid-template-columns:80px 124px minmax(140px,1.4fr) minmax(150px,1fr) 100px 50px;gap:14px}.filter-bar{display:grid;background:transparent;border:0;padding:4px 14px;margin:8px 0 12px}.filter-bar .selection-actions{grid-column:1/4;justify-content:flex-start;min-width:0}.filter-bar label{grid-column:4;max-width:none;min-width:0;width:100%}.command-toggle{width:124px;min-height:44px;background:#414e55;color:var(--primary-text-color);font-size:14px;padding:8px}.command-toggle[aria-pressed=true]{background:var(--primary-color);color:var(--text-primary-color);border-color:transparent}.save-bar{min-height:20px}.helper{margin-bottom:8px}
  @media(max-width:1000px) and (min-width:761px){.channel,.channel-head,.filter-bar{grid-template-columns:65px 124px minmax(100px,1fr) minmax(120px,1fr) 85px 40px;gap:8px}}
  @media(max-width:760px){header{grid-template-columns:1fr auto;gap:12px}header h1{font-size:20px}.header-center{grid-column:1/-1;grid-row:2;text-align:left}.header-center h2{font-size:19px}header>.primary,header>.back-modules{grid-column:2;grid-row:1;font-size:12px;padding:8px}.filter-bar{display:flex;flex-wrap:wrap;padding:0}.filter-bar label{order:0;min-width:100%}.filter-bar .selection-actions{order:1;width:100%}.channel{grid-template-columns:70px minmax(0,1fr);gap:10px}.command-toggle{width:124px}.channel .test-control{justify-self:start}.save-bar{position:static}.channel .channel-type{min-width:110px}}
+
+ :host{--module-action-width:224px}.module-row .actions{width:var(--module-action-width);gap:6px}.module-row .actions .primary{width:124px;flex:none}.module-row .icon-button{width:44px;flex:none}.overview-action{width:var(--module-action-width);height:44px}.export-bar{justify-content:flex-end;padding-right:16px}header>.overview-action{margin-right:16px}.filter-bar{display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:center;gap:16px;margin:4px 0 10px;padding:0 14px;min-height:44px}.filter-bar .selection-actions{width:auto;flex:none;gap:8px}.filter-bar label{display:flex;flex-direction:row;align-items:center;gap:12px;width:auto;min-width:0;max-width:none;flex:none;margin-left:auto;white-space:nowrap}.filter-bar select{width:280px;max-width:100%}.channels{margin-top:8px}
+ @media(max-width:760px){header:has(.overview-action){grid-template-columns:1fr}header>.overview-action{grid-column:1;grid-row:3;margin-right:12px}.export-bar{padding-right:12px}.module-row .serial{max-width:calc(100% - 230px)}.filter-bar{overflow-x:auto;justify-content:flex-start;padding:0 0 4px;gap:12px}.filter-bar label{order:1;min-width:0;flex:none;gap:8px;margin-left:auto;font-size:12px}.filter-bar .selection-actions{order:0;width:auto;flex:none}.filter-bar .actions button{flex:none;white-space:nowrap}.filter-bar select{width:180px}.filter-bar .selection-actions[hidden]+label{margin-left:0}}
 `; 
 
 function el(tag, attrs = {}, ...children) {
@@ -108,7 +111,8 @@ export class DingtianPanel extends HTMLElement {
   }
   updateSaveStatus() {
     const node=this.shadowRoot.querySelector('[data-dirty]');
-    if(node){node.textContent=this.saveError || this.cacheError || this.saveMessage;node.dataset.error=String(Boolean(this.saveError||this.cacheError));node.dataset.pending=String(this.dirty);}
+    if(node){node.textContent=this.saveError || this.cacheError || '';node.dataset.error=String(Boolean(this.saveError||this.cacheError));node.dataset.pending=String(this.dirty);}
+    const saveBar=this.shadowRoot.querySelector('.save-bar');if(saveBar)saveBar.hidden=!(this.saveError||this.cacheError);
     const retry=this.shadowRoot.querySelector('[data-retry]');if(retry)retry.hidden=!this.saveError;
     const title=this.shadowRoot.querySelector('[data-title]');if(title)title.textContent=this.draft?.display_name || 'Módulo';
     const count=this.shadowRoot.querySelector('[data-used]');if(count)count.textContent=`${this.draft.channels.filter(c=>c.enabled).length} de ${this.draft.channel_count} saídas utilizadas`;
@@ -151,7 +155,6 @@ export class DingtianPanel extends HTMLElement {
     const b=button(on?'Ligado':'Desligado',()=>this.testRelay(m,c,on?'OFF':'ON'),'command-toggle');
     b.setAttribute('aria-label',`${on?'Desligar':'Ligar'} saída ${c.number}`);
     b.setAttribute('aria-pressed',String(on));
-    b.title=optimistic?'Comando enviado; aguardando estado do módulo':known?'Estado informado pelo módulo':'Sem estado recebido. Clique para enviar ON.';
     b.disabled=!allowed;
     node.replaceChildren(b);
   }
@@ -289,8 +292,8 @@ export class DingtianPanel extends HTMLElement {
     const ids=this.selectedModules().filter(m=>this.selectedChannels(m).length).map(m=>m.module_uuid);
     if(!ids.length)return;
     const baselines=new Map(ids.map(id=>[id,structuredClone(this.data.modules[id])]));
-    this.groupBusy=true;this.groupMessage='Enviando comandos para a seleção…';this.updateStates();
-    try{const result=await this.api('operate_group',{module_ids:ids,area_id:this.areaFilter,payload},true);this.groupMessage=result.error||`${result.sent.length} comandos enviados.`;for(const item of result.sent||[]){const mod=this.data.modules[item.module_uuid];if(mod)this.rememberCommand(baselines.get(item.module_uuid)||mod,item.number,payload);}}
+    this.groupBusy=true;this.groupMessage='';this.updateStates();
+    try{const result=await this.api('operate_group',{module_ids:ids,area_id:this.areaFilter,payload},true);this.groupMessage=result.error||'';for(const item of result.sent||[]){const mod=this.data.modules[item.module_uuid];if(mod)this.rememberCommand(baselines.get(item.module_uuid)||mod,item.number,payload);}}
     catch(e){this.groupMessage=e.message||String(e);}
     finally{this.groupBusy=false;await this.load();this.updateStates();}
   }
@@ -327,7 +330,7 @@ export class DingtianPanel extends HTMLElement {
     if (this.busy) for (const b of root.querySelectorAll('button,input,select')) b.disabled = true;
   }
   renderOverview(main, modules) {
-    main.querySelector('header').append(el('div',{className:'header-center'},el('h2',{},'Módulos'),el('span',{className:'count'},`${modules.length} cadastrados · ${modules.reduce((a,m)=>a+m.used_count,0)} canais utilizados`)),button('+ Adicionar módulo',()=>this.addDialog(),'primary'));
+    main.querySelector('header').append(el('div',{className:'header-center'},el('h2',{},'Módulos'),el('span',{className:'count'},`${modules.length} cadastrados · ${modules.reduce((a,m)=>a+m.used_count,0)} canais utilizados`)),button('+ Adicionar módulo',()=>this.addDialog(),'primary overview-action'));
     if (!modules.length) main.append(el('section',{className:'empty'},el('div',{className:'symbol','aria-hidden':'true'},'▦'),el('h2',{},'Comece pelo primeiro módulo'),el('p',{className:'muted'},'Cadastre o serial e a capacidade. Depois, escolha os canais utilizados.'),button('Adicionar módulo',()=>this.addDialog(),'primary')));
     const grid=el('div',{className:'module-list'});
     const icon=(path)=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',path);svg.append(p);return svg;};
@@ -338,7 +341,7 @@ export class DingtianPanel extends HTMLElement {
     }
 
     main.append(grid);this.updateFilter();
-    main.append(el('div',{className:'bar'},button('Exportar para Excel',()=>this.exportInventory())));
+    main.append(el('div',{className:'bar export-bar'},button('Exportar para Excel',()=>this.exportInventory(),'primary overview-action')));
   }
   async exportInventory() {
     try{
@@ -349,7 +352,7 @@ export class DingtianPanel extends HTMLElement {
         for(const c of m.channels)rows.push([m.display_name,`Saída ${c.number}`,c.display_name,areas.get(c.area_id||m.area_id)||'',c.entity_type==='light'?'Luz':'Switch']);
       }
       const url=URL.createObjectURL(new Blob([excelWorkbook(rows)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-      const a=el('a',{href:url,download:'dingtian-saidas.xlsx'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      const a=el('a',{href:url,download:'Organização cabeados.xlsx'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }catch(e){this.error=e.message||String(e);this.render();}
   }
 
@@ -371,7 +374,7 @@ export class DingtianPanel extends HTMLElement {
     main.querySelector('header').insertBefore(center,main.querySelector('.back-modules'));
     this.filterBar(main);
     const retry=button('Revisar / tentar novamente',()=>this.retrySave());retry.dataset.retry='';retry.hidden=!this.saveError;
-    main.append(el('div',{className:'save-bar'},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveMessage),retry),el('p',{className:'helper'},'Edição salva automaticamente.'));
+    main.append(el('div',{className:'save-bar',hidden:!(this.saveError||this.cacheError)},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveError||this.cacheError||''),retry));
     const channels=el('section',{className:'channels','aria-label':`Canais de ${m.technical_id}`},el('div',{className:'channel-head','aria-hidden':'true'},...['Saída','Comando','Nome','Cômodo','Tipo','Usar'].map(t=>el('span',{},t))));
     for(const c of m.channels){
       const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);}});

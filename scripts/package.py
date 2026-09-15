@@ -38,7 +38,7 @@ def main():
             )
         print(filename, (ROOT / "dist" / filename).stat().st_size, "bytes; verified")
     addon = ROOT / "dingtian_manager"
-    target = ROOT / "dist/smart-house-dingtian-manager-addon-1.4.0.zip"
+    target = ROOT / "dist/smart-house-dingtian-manager-addon-1.4.1.zip"
     files = sorted(p for p in addon.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
     files.append(ROOT / "repository.json")
     with ZipFile(target, "w", compression=8) as archive:
