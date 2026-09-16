@@ -15,7 +15,7 @@ from .models import (
     update_module,
     validate_storage,
 )
-from .mqtt_discovery import discovery, tone_discovery
+from .mqtt_discovery import discovery
 
 
 class Manager:
@@ -44,6 +44,8 @@ class Manager:
             for c in module["channels"]:
                 if not c["enabled"]:
                     continue
+                if c.get("mode") == "cyclic_3" and not getattr(self.port, "cycles", None):
+                    raise ManagerError("Iluminação cíclica requer o aplicativo Dingtian Manager.")
                 topic, payload = discovery(state, module, c, self.port.prefix)
                 targets[topic] = {
                     "module_uuid": module["module_uuid"],
@@ -51,16 +53,6 @@ class Manager:
                     "entity_type": c["entity_type"],
                     "payload": payload,
                 }
-                if c.get("mode") == "cyclic_3":
-                    if not getattr(self.port, "cycles", None):
-                        raise ManagerError("Iluminação cíclica requer o aplicativo Dingtian Manager.")
-                    topic, payload = tone_discovery(state, module, c, self.port.prefix)
-                    targets[topic] = {
-                        "module_uuid": module["module_uuid"],
-                        "number": c["number"],
-                        "entity_type": "select",
-                        "payload": payload,
-                    }
         return targets
 
     async def mutate(self, action, revision, data, confirmed=False):

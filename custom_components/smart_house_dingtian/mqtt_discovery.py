@@ -1,36 +1,19 @@
 """Pure MQTT discovery generation. Physical command publishing lives elsewhere."""
 
 from .const import VERSION
-from .models import TONES
+
+# These are visual values for Home Assistant's RGB light picker. The relay still
+# has only three physical tones; arbitrary picker values are mapped to the nearest
+# configured tone by the Manager.
+TONE_RGB = {"warm": (255, 156, 74), "neutral": (255, 234, 202), "cool": (176, 210, 255)}
 
 
-def tone_topics(state, module, channel):
-    base = f"shd/{state['manager_uuid']}/{module['module_uuid']}/r{channel['number']}/tone"
-    return {"command_topic": base + "/set", "state_topic": base + "/state"}
-
-
-def tone_entity_id(channel):
-    return channel["last_entity_ids"].get(
-        "select", "select." + entity_id(channel).split(".", 1)[1] + "_tonalidade"
-    )
-
-
-def tone_discovery(state, module, channel, prefix):
-    topic = f"{prefix}/select/shd_{state['manager_uuid']}/{module['module_uuid']}_r{channel['number']}/config"
-    return topic, {
-        "unique_id": channel["unique_id"] + "_tonalidade",
-        "name": channel["display_name"] + " tonalidade",
-        "default_entity_id": tone_entity_id(channel),
-        **tone_topics(state, module, channel),
-        "options": list(TONES.values()),
-        "optimistic": False,
-        "qos": 0,
-        "retain": False,
-        "availability_topic": topics(module, channel)["availability_topic"],
-        "payload_available": "online",
-        "payload_not_available": "offline",
-        "icon": "mdi:lightbulb-auto",
-        "origin": {"name": "Smart House Dingtian Manager", "sw_version": VERSION},
+def cyclic_topics(state, module, channel):
+    base = f"shd/{state['manager_uuid']}/{module['module_uuid']}/r{channel['number']}/cyclic"
+    return {
+        "command_topic": base + "/power/set",
+        "rgb_command_topic": base + "/rgb/set",
+        "rgb_state_topic": base + "/rgb/state",
     }
 
 
@@ -80,4 +63,15 @@ def discovery(state, module, channel, prefix):
         payload.update(state_on="ON", state_off="OFF")
     else:
         payload["schema"] = "basic"
+        if channel.get("mode") == "cyclic_3":
+            # Keep one light entity. Power and RGB commands enter the Manager,
+            # which confirms every relay transition before publishing its color.
+            payload.update(
+                **cyclic_topics(state, module, channel),
+                rgb_command_template="{{ red }},{{ green }},{{ blue }}",
+                payload_on="ON",
+                payload_off="OFF",
+                on_command_type="last",
+                icon="mdi:lightbulb-auto",
+            )
     return topic, payload

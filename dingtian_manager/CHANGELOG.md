@@ -1,3 +1,9 @@
+# 1.8.0
+
+- A iluminação cíclica passa a usar uma única entidade light RGB, preservando o ID da luz.
+- O seletor RGB nativo controla Quente, Neutro e Frio; cores intermediárias são associadas à tonalidade configurada mais próxima.
+- A entidade select de tonalidade da versão 1.7.0 é removida durante a sincronização.
+
 # 1.7.0
 
 - Seção Avançado recolhida ao final do módulo: Normal (padrão) ou Cíclico de 3 por saída utilizada.

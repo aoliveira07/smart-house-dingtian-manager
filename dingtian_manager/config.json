@@ -1,6 +1,6 @@
 {
   "name": "Smart House Dingtian Manager",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "slug": "smart_house_dingtian_manager",
   "description": "Cadastro de módulos Dingtian e teste individual de relés pelo Home Assistant.",
   "url": "https://github.com/aoliveira07/smart-house-dingtian-manager",

@@ -1,4 +1,4 @@
-"""Tone select discovery and service calls through real HA, with simulated MQTT relays."""
+"""One RGB light entity, controlled through real HA MQTT discovery and feedback."""
 
 import asyncio
 from copy import deepcopy
@@ -14,7 +14,9 @@ from dingtian_manager.app.port import RemotePort
 
 
 @pytest.mark.usefixtures("socket_enabled")
-async def test_tone_select_feedback_and_cleanup(hass, mqtt_mock, hass_client, hass_access_token, tmp_path):
+async def test_rgb_light_feedback_and_single_entity(
+    hass, mqtt_mock, hass_client, hass_access_token, tmp_path
+):
     mqtt_mock.conf = mqtt_mock.return_value.conf
     for component in ("config", "diagnostics", "websocket_api"):
         assert await async_setup_component(hass, component, {})
@@ -45,26 +47,31 @@ async def test_tone_select_feedback_and_cleanup(hass, mqtt_mock, hass_client, ha
         assert manager.state["error"] is None
         await port.sync_subscriptions()
         await hass.async_block_till_done()
-        select_id = "select.cabeado1_r1_tonalidade"
-        entry = er.async_get(hass).async_get(select_id)
-        assert entry and entry.device_id is None
-        light_entry = er.async_get(hass).async_get("light.cabeado1_r1")
-        assert hass.states.get(select_id).attributes["options"] == ["Quente", "Neutro", "Frio"]
+        light_id = "light.cabeado1_r1"
+        light_entry = er.async_get(hass).async_get(light_id)
+        assert light_entry and light_entry.device_id is None
+        assert not [
+            entry for entry in er.async_get(hass).entities.values() if entry.entity_id.startswith("select.")
+        ]
         async_fire_mqtt_message(hass, "/Cabeado/relay00123/out/lwt_availability", "online")
         async_fire_mqtt_message(hass, "/Cabeado/relay00123/out/r1", "ON")
         await asyncio.sleep(0.1)
         await port.cycles.events.join()
         await port.cycles.synchronize(mid, 1, "warm", 2)
         await hass.async_block_till_done()
-        assert hass.states.get(select_id).state == "Quente"
+        assert hass.states.get(light_id).attributes["rgb_color"] == (255, 156, 74)
         await hass.services.async_call(
-            "select", "select_option", {"entity_id": select_id, "option": "Frio"}, blocking=True
+            "light", "turn_on", {"entity_id": light_id, "rgb_color": [176, 210, 255]}, blocking=True
         )
         for _ in range(200):
-            if hass.states.get(select_id).state == "Frio" and not port.cycles.busy(mid, 1):
+            if hass.states.get(light_id).attributes.get("rgb_color") == (
+                176,
+                210,
+                255,
+            ) and not port.cycles.busy(mid, 1):
                 break
             await asyncio.sleep(0.02)
-        assert hass.states.get(select_id).state == "Frio"
+        assert hass.states.get(light_id).attributes["rgb_color"] == (176, 210, 255)
         assert manager.state["modules"][mid]["channels"][0]["current_position"] == 2
         commands = [c.args[:4] for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]]
         assert commands == [
@@ -75,13 +82,12 @@ async def test_tone_select_feedback_and_cleanup(hass, mqtt_mock, hass_client, ha
         await asyncio.sleep(0.1)
         await port.cycles.events.join()
         await hass.async_block_till_done()
-        assert hass.states.get(select_id).state == "Quente"
+        assert hass.states.get(light_id).attributes["rgb_color"] == (255, 156, 74)
         module = deepcopy(manager.state["modules"][mid])
         module["channels"][0]["mode"] = "normal"
         await manager.mutate("save", 2, module)
         assert manager.state["error"] is None
-        assert er.async_get(hass).async_get(select_id) is None
-        assert er.async_get(hass).async_get("light.cabeado1_r1").id == light_entry.id
+        assert er.async_get(hass).async_get(light_id).id == light_entry.id
     finally:
         await port.cycles.close()
         port.tests.close()

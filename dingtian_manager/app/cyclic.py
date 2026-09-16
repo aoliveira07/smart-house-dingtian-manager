@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 from .core.models import TONES, ManagerError
-from .core.mqtt_discovery import tone_topics, topics
+from .core.mqtt_discovery import TONE_RGB, cyclic_topics, topics
 
 LOG = logging.getLogger(__name__)
 
@@ -66,12 +66,17 @@ class CyclicController:
         for module, c in self.channels():
             key = (module["module_uuid"], c["number"])
             address = topics(module, c)
-            if topic == tone_topics(self.manager.state, module, c)["command_topic"]:
+            control = cyclic_topics(self.manager.state, module, c)
+            if topic == control["rgb_command_topic"]:
                 if not retained:
                     try:
-                        self.request(key, raw)
+                        self.request(key, self.nearest_tone(raw))
                     except ManagerError as exc:
                         self.enqueue(("error", key, str(exc)))
+                return
+            if topic == control["command_topic"]:
+                if not retained and raw in ("ON", "OFF"):
+                    asyncio.create_task(self.power(key, raw))
                 return
             if topic == address["availability_topic"] and raw != "online":
                 self.relays.pop(key, None)
@@ -139,14 +144,48 @@ class CyclicController:
         if not self.port.connected:
             return
         position = c.get("current_position")
-        raw = "None" if position is None or c.get("cycle_needs_sync") else TONES[c["sequence"][position]]
+        raw = (
+            ""
+            if position is None or c.get("cycle_needs_sync")
+            else ",".join(str(value) for value in TONE_RGB[c["sequence"][position]])
+        )
         await self.port.client.publish(
-            tone_topics(self.manager.state, module, c)["state_topic"], raw, 1, True
+            cyclic_topics(self.manager.state, module, c)["rgb_state_topic"], raw, 1, True
         )
 
     async def publish_all(self):
         for module, c in self.channels():
             await self.publish(module, c)
+
+    def nearest_tone(self, raw):
+        try:
+            red, green, blue = (int(part.strip()) for part in raw.split(","))
+        except (AttributeError, TypeError, ValueError):
+            raise ManagerError("Cor RGB inválida.") from None
+        if any(value < 0 or value > 255 for value in (red, green, blue)):
+            raise ManagerError("Cor RGB inválida.")
+        return TONES[
+            min(
+                TONE_RGB,
+                key=lambda tone: sum(
+                    (value - reference) ** 2
+                    for value, reference in zip((red, green, blue), TONE_RGB[tone], strict=True)
+                ),
+            )
+        ]
+
+    async def power(self, key, payload):
+        if payload == "ON" and self.busy(*key):
+            return  # The RGB command already started the confirmed cycle.
+        if payload == "OFF" and self.busy(*key):
+            self.tasks[key].cancel()
+        async with self.manager.lock:
+            module, c = self.get(key)
+            if self.manager.state["error"] or not self.port.connected:
+                return
+            if self.port.received.get(topics(module, c)["availability_topic"]) != "online":
+                return
+            await self.port.send_command(module, c, payload)
 
     def request(self, key, tone):
         if tone not in TONES.values():

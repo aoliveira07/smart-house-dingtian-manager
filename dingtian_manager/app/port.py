@@ -6,7 +6,7 @@ import time
 from copy import deepcopy
 
 from .core.models import ManagerError
-from .core.mqtt_discovery import entity_id, tone_entity_id, topics
+from .core.mqtt_discovery import entity_id, topics
 from .core.relay_test import RelayTests
 from .cyclic import CyclicController
 from .store import Store
@@ -203,7 +203,7 @@ class RemotePort:
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state["cyclic_supported"] = True
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.7.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.8.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -284,16 +284,6 @@ class RemotePort:
                     await self.client.call(
                         "config/device_registry/update", device_id=device["id"], name_by_user=change["name"]
                     )
-        for module in self.manager.state["modules"].values():
-            for channel in module["channels"]:
-                entry = self.registry_entry(module, channel, "select")
-                if entry and channel["enabled"] and channel.get("mode") == "cyclic_3":
-                    if entry.get("area_id") != channel.get("area_id"):
-                        await self.client.call(
-                            "config/entity_registry/update",
-                            entity_id=entry["entity_id"],
-                            area_id=channel.get("area_id"),
-                        )
         if changes:
             await self.registries()
 
@@ -415,8 +405,6 @@ class RemotePort:
         try:
             await self.client.publish(topic, payload, 1, True)
             await asyncio.wait_for(future, 15)
-            if not payload and record["entity_type"] == "select":
-                await self.client.publish(record["payload"]["state_topic"], "", 1, True)
         finally:
             self.pending_echo.pop(topic, None)
 
@@ -429,9 +417,7 @@ class RemotePort:
             if not created and not entry:
                 return
             if created and entry:
-                if entry["entity_id"] != (
-                    tone_entity_id(channel) if record["entity_type"] == "select" else entity_id(channel)
-                ):
+                if entry["entity_id"] != entity_id(channel):
                     raise ManagerError("HA atribuiu um sufixo inesperado; resolva a colisão no registro.")
                 channel["last_entity_ids"][record["entity_type"]] = entry["entity_id"]
                 return
