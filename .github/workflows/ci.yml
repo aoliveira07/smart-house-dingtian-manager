@@ -16,7 +16,7 @@ jobs:
           cache: npm
       - run: pip install pytest pytest-asyncio ruff -r dingtian_manager/requirements.txt
       - run: ruff check . && ruff format --check .
-      - run: pytest tests/test_manager.py tests/test_addon.py -q
+      - run: pytest tests/test_manager.py tests/test_addon.py tests/test_cyclic.py -q
       - run: npm ci && npm run build && npm test
       - run: python scripts/build_addon.py
       - run: git diff --exit-code custom_components/smart_house_dingtian/frontend dingtian_manager/app/core dingtian_manager/static/panel.js
@@ -76,4 +76,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           printf '\nCI da release: %s/actions/runs/%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> docs/RELEASE_NOTES.md
-          gh release create v1.6.0 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.6.0 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md
+          gh release create v1.7.0 dist/*.zip --target "$GITHUB_SHA" --prerelease --title "1.7.0 — Dingtian Manager aplicativo" --notes-file docs/RELEASE_NOTES.md

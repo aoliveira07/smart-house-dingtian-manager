@@ -21,6 +21,29 @@ class Channel(TypedDict):
     last_entity_ids: dict[str, str]
 
 
+TONES = {"warm": "Quente", "neutral": "Neutro", "cool": "Frio"}
+
+
+def cycle_config(item, target):
+    mode = item.get("mode", target.get("mode", "normal"))
+    sequence = item.get("sequence", target.get("sequence", list(TONES)))
+    interval = item.get("pulse_interval_ms", target.get("pulse_interval_ms", 500))
+    if mode not in ("normal", "cyclic_3"):
+        raise ManagerError("Comportamento do canal inválido.")
+    if (
+        not isinstance(sequence, list)
+        or len(sequence) != 3
+        or any(not isinstance(t, str) or t not in TONES for t in sequence)
+        or len(set(sequence)) != 3
+    ):
+        raise ManagerError("A sequência deve conter Quente, Neutro e Frio uma vez cada.")
+    if type(interval) is not int or not 100 <= interval <= 10000:
+        raise ManagerError("Intervalo deve ser de 100 a 10000 ms.")
+    if mode != target.get("mode", "normal") or sequence != target.get("sequence", list(TONES)):
+        target.update(current_position=None, cycle_needs_sync=True, cycle_error=None)
+    target.update(mode=mode, sequence=list(sequence), pulse_interval_ms=interval)
+
+
 def name(value):
     if not isinstance(value, str) or not value.strip() or len(value) > 120:
         raise ManagerError("Informe um nome de 1 a 120 caracteres.")
@@ -149,6 +172,9 @@ def update_module(module, data):
         ):
             raise ManagerError("Uso e tipo do canal são obrigatórios.")
         target = result["channels"][n - 1]
+        cycle_config(item, target)
+        if target.get("mode") == "cyclic_3" and target["enabled"] != item["enabled"]:
+            target.update(current_position=None, cycle_needs_sync=True, cycle_error=None)
         area = item.get("area_id", target.get("area_id"))
         if area is not None and (
             not isinstance(area, str) or not area or len(area) > 128 or any(ord(c) < 32 for c in area)
@@ -188,16 +214,21 @@ def validate_storage(data):
         if module["mqtt_prefix"] != "/Cabeado":
             raise ManagerError("Perfil MQTT não suportado.")
         for n, c in enumerate(module["channels"], 1):
+            position = c.get("current_position")
+            if position is not None and (type(position) is not int or position not in range(3)):
+                raise ManagerError("Posição de tonalidade inválida.")
             if c["number"] != n or c["unique_id"] != f"{module['technical_id']}-r{n}":
                 raise ManagerError("Identidade de canal inválida.")
             for domain, entity_id in c["last_entity_ids"].items():
-                if domain not in ("light", "switch") or not re.fullmatch(domain + r"\.[a-z0-9_]+", entity_id):
+                if domain not in ("light", "switch", "select") or not re.fullmatch(
+                    domain + r"\.[a-z0-9_]+", entity_id
+                ):
                     raise ManagerError("Referência de entidade inválida.")
     if type(data["next_module_number"]) is not int or data["next_module_number"] <= max(numbers, default=0):
         raise ManagerError("Sequência de módulos inválida.")
     for topic, record in data["owned_topics"].items():
         mid, n, domain = record["module_uuid"], record["number"], record["entity_type"]
-        if mid not in data["modules"] or domain not in ("light", "switch"):
+        if mid not in data["modules"] or domain not in ("light", "switch", "select"):
             raise ManagerError("Propriedade de discovery inválida.")
         if type(n) is not int or not 1 <= n <= data["modules"][mid]["channel_count"]:
             raise ManagerError("Canal de discovery inválido.")

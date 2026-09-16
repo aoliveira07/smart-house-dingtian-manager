@@ -1,7 +1,10 @@
 // Dependency-free Web Component. Distributed verbatim: no CDN or production build tools.
 const DOMAIN = 'smart_house_dingtian';
 const ROOT = '/smart-house-dingtian';
+const toneLabels = {warm:'Quente',neutral:'Neutro',cool:'Frio'};
 const css = `
+ .advanced{margin-top:22px;border:1px solid var(--divider-color);border-radius:10px;padding:14px;background:var(--card-background-color)}.advanced summary{cursor:pointer;font-weight:650;min-height:30px}.advanced-channel{padding:16px 0;border-top:1px solid var(--divider-color);margin-top:12px}.advanced-title,.tone-fields,.tone-sync{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.advanced-title strong{flex:1;min-width:130px}.advanced-title label{width:200px}.tone-fields{margin:14px 0;align-items:flex-end}.tone-fields label{flex:1;min-width:130px}.tone-sync select{width:150px}.tone-status{margin:12px 0 8px}.tone-error{color:var(--error-color);overflow-wrap:anywhere}@media(max-width:760px){.advanced{padding:12px}.advanced-title label{width:100%}.tone-fields label{flex-basis:40%;min-width:100px}.tone-sync select,.tone-sync button{width:100%}}
+
  .relay-switch{display:flex;align-items:center;gap:8px}.switch-track{position:relative;display:inline-block;width:34px;height:20px;border-radius:20px;background:var(--secondary-text-color,#60747d)}.switch-knob{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:white}.relay-switch[aria-checked=true] .switch-track{background:var(--primary-color,#087f8c)}.relay-switch[aria-checked=true] .switch-knob{left:17px}
  :host{position:relative;display:block;height:100%;overflow:auto;color:var(--primary-text-color,#172d35);background:var(--primary-background-color,#f4f7f8);font:15px/1.5 system-ui,sans-serif}
  *{box-sizing:border-box}main{max-width:1180px;margin:auto;padding:28px 28px 90px}h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.8px}h2{font-size:21px;margin:0 0 8px}p{margin:4px 0 16px}.muted{color:var(--secondary-text-color,#60747d)}.eyebrow{font-size:11px;letter-spacing:2px;font-weight:750;text-transform:uppercase;color:var(--primary-color,#087f8c);margin:0 0 12px}
@@ -90,7 +93,7 @@ export class DingtianPanel extends HTMLElement {
     finally {this.loading=false;}
   }
   draftKey() {return `${DOMAIN}:draft:${this.data?.manager_uuid || 'preview'}:${this.active}:${this.editorId}`;}
-  config(m) {return {module_uuid:m.module_uuid,channels:m.channels.map(c=>({number:c.number,display_name:c.display_name,entity_type:c.entity_type,enabled:c.enabled,area_id:c.area_id??null}))};}
+  config(m) {return {module_uuid:m.module_uuid,channels:m.channels.map(c=>({number:c.number,display_name:c.display_name,entity_type:c.entity_type,enabled:c.enabled,area_id:c.area_id??null,mode:c.mode??'normal',sequence:c.sequence??['warm','neutral','cool'],pulse_interval_ms:c.pulse_interval_ms??500}))};}
   resetDraft() {
     clearTimeout(this.saveTimer);
     const m = this.data?.modules[this.active];
@@ -141,11 +144,15 @@ export class DingtianPanel extends HTMLElement {
     for (const c of current.channels) {
       const node = this.shadowRoot.querySelector(`[data-test="${c.number}"]`);
       if(node) this.fillTest(node,current,c);
+      const tone=this.shadowRoot.querySelector(`[data-tone-status="${c.number}"]`);
+      if(tone){tone.textContent=`Tonalidade atual: ${c.current_position!=null&&!c.cycle_needs_sync?toneLabels[c.sequence[c.current_position]]:'Sincronize para iniciar'}${c.cycle_busy?' · Alterando…':''}`;}
+      const cycleError=this.shadowRoot.querySelector(`[data-tone-error="${c.number}"]`);if(cycleError){cycleError.textContent=c.cycle_error||'';cycleError.hidden=!c.cycle_error;}
+      const syncButton=this.shadowRoot.querySelector(`[data-tone-sync="${c.number}"]`);if(syncButton)syncButton.disabled=Boolean(c.cycle_busy||this.busy||this.saving||this.dirty);
     }
   }
   fillTest(node,m,c) {
     const pending=this.localPending.has(c.number);
-    const allowed=this.data.broker_connected&&!this.data.error&&!this.busy&&!this.groupBusy&&!this.saving&&!this.dirty&&!pending&&this.editRevision===this.data.revision;
+    const allowed=!c.cycle_busy&&this.data.broker_connected&&!this.data.error&&!this.busy&&!this.groupBusy&&!this.saving&&!this.dirty&&!pending&&this.editRevision===this.data.revision;
     const key=`${m.module_uuid}:${m.serial}:${c.number}`;
     const command=this.commandStates.get(key);
     const optimistic=command && Date.now()<command.until;
@@ -287,7 +294,7 @@ export class DingtianPanel extends HTMLElement {
     const actions=this.shadowRoot.querySelector('.selection-actions');if(actions)actions.hidden=false;
     const current=this.draft;
     for(const row of this.shadowRoot.querySelectorAll('[data-channel]'))row.hidden=current?!this.matchesArea(current,current.channels[Number(row.dataset.channel)-1]):false;
-    const blocked=!channels.length||this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.size||this.data.error||!this.data.broker_connected;
+    const blocked=!channels.length||channels.some(c=>c.cycle_busy)||this.dirty||this.saving||this.busy||this.groupBusy||this.localPending.size||this.data.error||!this.data.broker_connected;
     for(const b of this.shadowRoot.querySelectorAll('.group-on,.group-off'))b.disabled=Boolean(blocked);
     const message=this.shadowRoot.querySelector('[data-group-message]');if(message){message.textContent=this.groupMessage;message.hidden=!this.groupMessage;}
   }
@@ -381,7 +388,7 @@ export class DingtianPanel extends HTMLElement {
     main.append(el('div',{className:'save-bar',hidden:!(this.saveError||this.cacheError)},el('span',{className:'save-status','data-dirty':'',role:'status','aria-live':'polite'},this.saveError||this.cacheError||''),retry));
     const channels=el('section',{className:'channels','aria-label':`Canais de ${m.technical_id}`},el('div',{className:'channel-head','aria-hidden':'true'},...['Saída','Comando','Nome','Cômodo','Tipo','Usar'].map(t=>el('span',{},t))));
     for(const c of m.channels){
-      const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);}});
+      const use=el('input',{type:'checkbox',checked:c.enabled,'aria-label':`R${c.number} utilizado`,onchange:e=>{c.enabled=e.target.checked;this.changed(true);if(this.data.cyclic_supported)this.renderAdvanced(main);}});
       const type=el('select',{'aria-label':`Tipo R${c.number}`,onchange:e=>{c.entity_type=e.target.value;this.changed(true);}},el('option',{value:''},'Selecionar'),el('option',{value:'light'},'Luz'),el('option',{value:'switch'},'Switch'));type.value=c.entity_type;
       const display=el('input',{value:c.display_name,maxLength:120,'aria-label':`Nome R${c.number}`,oninput:e=>{c.display_name=e.target.value;this.changed();},onblur:()=>this.save()});
       const area=el('select',{'aria-label':`Cômodo R${c.number}`,onchange:e=>{const next=e.target.value||null;if(next===c.area_id)return;const areaName=id=>(this.data.areas||[]).find(a=>a.area_id===id)?.name||'Sem cômodo';if(!window.confirm(`Alterar o cômodo de ${c.display_name} de ${areaName(c.area_id)} para ${areaName(next)}? O código da entidade será mantido.`)){e.target.value=c.area_id||'';return;}c.area_id=next;this.changed(true);}},el('option',{value:''},'Sem cômodo'),...(this.data.areas||[]).map(a=>el('option',{value:a.area_id},a.name)));
@@ -391,8 +398,31 @@ export class DingtianPanel extends HTMLElement {
       const test=el('div',{className:'test-control','data-test':c.number});this.fillTest(test,current||m,live);
       channels.append(el('article',{className:'channel','data-channel':c.number},el('div',{className:'position'},`Saída ${c.number}`),test,el('label',{className:'channel-name'},el('span',{className:'sr'},'Nome do canal'),display),el('label',{className:'channel-area'},el('span',{className:'sr'},'Cômodo'),area),el('label',{className:'channel-type'},el('span',{className:'sr'},'Tipo'),type),el('label',{className:'inline channel-use'},use,el('span',{},'Usar'))));
     }
-    main.append(channels);this.updateSaveStatus();
+    main.append(channels);if(this.data.cyclic_supported)this.renderAdvanced(main);this.updateSaveStatus();
   }
+  renderAdvanced(main) {
+    main.querySelector('.advanced')?.remove();
+    const details=el('details',{className:'advanced',open:Boolean(this.advancedOpen),ontoggle:e=>{this.advancedOpen=e.target.open;}},el('summary',{},'Avançado'));
+    const used=this.draft.channels.filter(c=>c.enabled);
+    if(!used.length)details.append(el('p',{className:'muted'},'Marque Usar nas saídas que deseja configurar.'));
+    for(const c of used){
+      const mode=el('select',{'aria-label':`Comportamento R${c.number}`,onchange:e=>{c.mode=e.target.value;c.sequence??=['warm','neutral','cool'];c.pulse_interval_ms??=500;this.changed(true);this.advancedOpen=true;this.renderAdvanced(main);}},el('option',{value:'normal'},'Normal'),el('option',{value:'cyclic_3'},'Cíclico de 3'));mode.value=c.mode||'normal';
+      const card=el('section',{className:'advanced-channel'},el('div',{className:'advanced-title'},el('strong',{},`Saída ${c.number} · ${c.display_name}`),el('label',{},'Comportamento',mode)));
+      if(c.mode==='cyclic_3'){
+        const fields=el('div',{className:'tone-fields'});
+        (c.sequence||['warm','neutral','cool']).forEach((tone,i)=>{
+          const choice=el('select',{'aria-label':`Posição ${i+1} R${c.number}`,onchange:e=>{const sequence=[...(c.sequence||['warm','neutral','cool'])],other=sequence.indexOf(e.target.value);[sequence[i],sequence[other]]=[sequence[other],sequence[i]];c.sequence=sequence;this.changed(true);this.renderAdvanced(main);}},...Object.entries(toneLabels).map(([value,label])=>el('option',{value},label)));choice.value=tone;fields.append(el('label',{},`Posição ${i+1}`,choice));
+        });
+        fields.append(el('label',{},'Intervalo OFF → ON (ms)',el('input',{type:'number',min:100,max:10000,step:50,value:c.pulse_interval_ms??500,'aria-label':`Intervalo R${c.number}`,onchange:e=>{c.pulse_interval_ms=Number(e.target.value);this.changed(true);}})));
+        const choice=el('select',{'aria-label':`Sincronizar tonalidade R${c.number}`},...Object.entries(toneLabels).map(([value,label])=>el('option',{value},label)));
+        const sync=button('Sincronizar tonalidade atual',async()=>{if((this.dirty||this.saving)&&!await this.save())return;await this.perform('cyclic_sync',{module_uuid:this.active,number:c.number,tone:choice.value});});sync.dataset.toneSync=c.number;
+        card.append(fields,el('p',{className:'tone-status','data-tone-status':c.number},'Tonalidade atual: Sincronize para iniciar'),el('p',{className:'tone-error','data-tone-error':c.number,role:'status',hidden:true}),el('div',{className:'tone-sync'},choice,sync),el('p',{className:'helper'},'Sincronizar apenas ajusta a memória; não aciona a saída. Ao mudar a ordem, sincronize novamente.'));
+      }
+      details.append(card);
+    }
+    main.append(details);this.updateStates();
+  }
+
 }
 if (!customElements.get('smart-house-dingtian-panel')) customElements.define('smart-house-dingtian-panel', DingtianPanel);
 

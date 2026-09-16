@@ -1,8 +1,12 @@
-# Smart House Dingtian Manager 1.6.0
+# Smart House Dingtian Manager 1.7.0
 
-- Nomes de saídas únicos em todos os módulos, inclusive antes de marcar Usar. Maiúsculas e espaços extras não permitem duplicatas; nomes padrão de saídas ainda não configuradas são dispensados.
-- Alterar cômodo pede confirmação antes de salvar, preservando código, identidade e marcação Usar da entidade.
-- Ligar seleção e Desligar seleção funcionam em Todos os cômodos e Sem cômodo, atuando nas saídas exibidas, inclusive as desmarcadas em Usar.
-- Cadastros antigos não são renomeados automaticamente: nomes conflitantes precisam ser corrigidos ao editar o módulo.
+- Seção Avançado recolhida ao final do módulo: Normal (padrão) ou Cíclico de 3 por saída utilizada.
+- Ordem Quente/Neutro/Frio configurável sem repetições, intervalo OFF → ON de 100 a 10000 ms (padrão 500 ms).
+- Entidade MQTT select de tonalidade independente, mantendo a entidade original e seus identificadores.
+- Posição persistente atualizada somente por feedback OFF → ON; acompanha interruptores físicos e ignora mensagens repetidas/retidas como novos ciclos.
+- Troca automática confirma OFF e ON, considera a luz inicialmente desligada, serializa por canal e conserva apenas o último destino solicitado.
+- Timeout de 5 segundos interrompe a operação sem reenvio; sincronização manual corrige a memória sem acionar relés.
 
-Validação: testes de backend e frontend, integração com Home Assistant e containers amd64/aarch64 na CI. Acionamento físico não testado nesta publicação.
+Após ativar Cíclico de 3, sincronize a tonalidade inicial em Avançado. Nenhum canal existente é convertido automaticamente.
+
+Testes automatizados e CI; sem acionamento de hardware físico nesta publicação.

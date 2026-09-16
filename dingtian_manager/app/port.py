@@ -6,8 +6,9 @@ import time
 from copy import deepcopy
 
 from .core.models import ManagerError
-from .core.mqtt_discovery import entity_id, topics
+from .core.mqtt_discovery import entity_id, tone_entity_id, topics
 from .core.relay_test import RelayTests
+from .cyclic import CyclicController
 from .store import Store
 
 
@@ -32,6 +33,7 @@ class RemotePort:
         self.legacy_active = False
         self.error = "Conectando ao Home Assistant…"
         self.tests = RelayTests(self.changed)
+        self.cycles = CyclicController(self)
         client.on_disconnect = self.disconnected
 
     @property
@@ -53,6 +55,7 @@ class RemotePort:
         self.discovery_seen.clear()
         self.subscriptions.clear()
         self.tests.disconnected()
+        self.cycles.disconnected()
         for _, future in self.pending_echo.values():
             if not future.done():
                 future.set_exception(ManagerError("Conexão interrompida durante Discovery."))
@@ -88,6 +91,7 @@ class RemotePort:
                         await self.client.unsubscribe(ident)
                     self.subscriptions.clear()
                     self.discovery_seen.clear()
+                self.cycles.disconnected()
             self._connected = now_connected
             self.checked_at = time.monotonic()
             self.debug = diagnostic.get("mqtt_debug_info", {}).get("entities", [])
@@ -96,6 +100,7 @@ class RemotePort:
             self._connected = False
             self.received.clear()
             self.tests.disconnected()
+            self.cycles.disconnected()
             raise
 
     async def registries(self):
@@ -142,12 +147,13 @@ class RemotePort:
 
     def registry_entry(self, module, channel, domain=None):
         domain = domain or channel["entity_type"]
+        uid = channel["unique_id"] + ("_tonalidade" if domain == "select" else "")
         return next(
             (
                 e
                 for e in self.entities.values()
                 if e.get("platform") == "mqtt"
-                and e.get("unique_id") == channel["unique_id"]
+                and e.get("unique_id") == uid
                 and e["entity_id"].startswith(domain + ".")
                 and self.is_ours(e, module)
             ),
@@ -165,7 +171,7 @@ class RemotePort:
             if device and device.get("name_by_user") and (mid, None) not in pending:
                 module["display_name"] = device["name_by_user"]
             for channel in module["channels"]:
-                for domain in ("light", "switch"):
+                for domain in ("light", "switch", "select"):
                     entry = self.registry_entry(module, channel, domain)
                     if not entry:
                         continue
@@ -195,8 +201,9 @@ class RemotePort:
     def decorate(self, state):
         self.refresh(state)
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
+        state["cyclic_supported"] = True
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.6.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.7.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (
@@ -222,6 +229,7 @@ class RemotePort:
                 )
                 channel["state_version"] = self.state_versions.get(channel["topics"]["state_topic"], 0)
                 channel["test"] = dict(self.tests.get(module, channel))
+                channel["cycle_busy"] = self.cycles.busy(module["module_uuid"], channel["number"])
         return state
 
     def name_updates(self, before, desired):
@@ -276,6 +284,16 @@ class RemotePort:
                     await self.client.call(
                         "config/device_registry/update", device_id=device["id"], name_by_user=change["name"]
                     )
+        for module in self.manager.state["modules"].values():
+            for channel in module["channels"]:
+                entry = self.registry_entry(module, channel, "select")
+                if entry and channel["enabled"] and channel.get("mode") == "cyclic_3":
+                    if entry.get("area_id") != channel.get("area_id"):
+                        await self.client.call(
+                            "config/entity_registry/update",
+                            entity_id=entry["entity_id"],
+                            area_id=channel.get("area_id"),
+                        )
         if changes:
             await self.registries()
 
@@ -311,29 +329,29 @@ class RemotePort:
         for record in targets.values():
             module = state["modules"][record["module_uuid"]]
             channel = module["channels"][record["number"] - 1]
+            uid = record["payload"]["unique_id"]
             for entry in self.entities.values():
                 if (
                     entry.get("platform") == "mqtt"
-                    and entry.get("unique_id") == channel["unique_id"]
+                    and entry.get("unique_id") == uid
                     and not self.is_ours(entry, module)
                 ):
                     raise ManagerError("Conflito de unique_id com entidade existente: " + entry["entity_id"])
-            planned = entity_id(channel)
+            planned = record["payload"]["default_entity_id"]
             existing = self.entities.get(planned)
-            if existing and (
-                existing.get("unique_id") != channel["unique_id"] or not self.is_ours(existing, module)
-            ):
+            if existing and (existing.get("unique_id") != uid or not self.is_ours(existing, module)):
                 raise ManagerError("entity_id ocupado: " + planned)
             if not existing and planned in self.states:
                 raise ManagerError("entity_id ocupado fora do registro: " + planned)
             for topic, uid, cmd in self.external_configs():
                 if topic not in state["owned_topics"] and (
-                    uid == channel["unique_id"] or cmd == record["payload"]["command_topic"]
+                    uid == record["payload"]["unique_id"] or cmd == record["payload"]["command_topic"]
                 ):
                     raise ManagerError("Conflito MQTT por identidade/tópico. Confira o cadastro legado.")
 
     def receive(self, message):
         topic, raw = message["topic"], message["payload"]
+        self.cycles.receive(topic, raw, message.get("retain", False))
         if topic in self.pending_echo:
             expected, future = self.pending_echo[topic]
             if raw == expected and not future.done():
@@ -372,6 +390,8 @@ class RemotePort:
 
     async def sync_subscriptions(self):
         wanted = {self.prefix + "/#"}
+        if any(self.cycles.channels()):
+            wanted.add(f"shd/{self.manager.state['manager_uuid']}/#")
         for topic, record in self.manager.state["owned_topics"].items():
             marker = f"/{record['entity_type']}/shd_{self.manager.state['manager_uuid']}/"
             wanted.add(topic.split(marker)[0] + "/#")
@@ -395,6 +415,8 @@ class RemotePort:
         try:
             await self.client.publish(topic, payload, 1, True)
             await asyncio.wait_for(future, 15)
+            if not payload and record["entity_type"] == "select":
+                await self.client.publish(record["payload"]["state_topic"], "", 1, True)
         finally:
             self.pending_echo.pop(topic, None)
 
@@ -407,9 +429,11 @@ class RemotePort:
             if not created and not entry:
                 return
             if created and entry:
-                if entry["entity_id"] != entity_id(channel):
+                if entry["entity_id"] != (
+                    tone_entity_id(channel) if record["entity_type"] == "select" else entity_id(channel)
+                ):
                     raise ManagerError("HA atribuiu um sufixo inesperado; resolva a colisão no registro.")
-                channel["last_entity_ids"][channel["entity_type"]] = entry["entity_id"]
+                channel["last_entity_ids"][record["entity_type"]] = entry["entity_id"]
                 return
             await asyncio.sleep(0.3)
         raise ManagerError("Discovery enviado; alteração da entidade ainda não confirmada no HA.")

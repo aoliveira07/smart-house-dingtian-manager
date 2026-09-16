@@ -1,6 +1,37 @@
 """Pure MQTT discovery generation. Physical command publishing lives elsewhere."""
 
 from .const import VERSION
+from .models import TONES
+
+
+def tone_topics(state, module, channel):
+    base = f"shd/{state['manager_uuid']}/{module['module_uuid']}/r{channel['number']}/tone"
+    return {"command_topic": base + "/set", "state_topic": base + "/state"}
+
+
+def tone_entity_id(channel):
+    return channel["last_entity_ids"].get(
+        "select", "select." + entity_id(channel).split(".", 1)[1] + "_tonalidade"
+    )
+
+
+def tone_discovery(state, module, channel, prefix):
+    topic = f"{prefix}/select/shd_{state['manager_uuid']}/{module['module_uuid']}_r{channel['number']}/config"
+    return topic, {
+        "unique_id": channel["unique_id"] + "_tonalidade",
+        "name": channel["display_name"] + " tonalidade",
+        "default_entity_id": tone_entity_id(channel),
+        **tone_topics(state, module, channel),
+        "options": list(TONES.values()),
+        "optimistic": False,
+        "qos": 0,
+        "retain": False,
+        "availability_topic": topics(module, channel)["availability_topic"],
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "icon": "mdi:lightbulb-auto",
+        "origin": {"name": "Smart House Dingtian Manager", "sw_version": VERSION},
+    }
 
 
 def topics(module, channel):

@@ -62,6 +62,12 @@ async def api(request):
         return web.json_response(result)
     if not port.client.connected:
         raise ManagerError("Home Assistant desconectado. Nenhum comando foi enfileirado.")
+    if action == "cyclic_sync":
+        if set(data) != {"module_uuid", "number", "tone"}:
+            raise ManagerError("Parâmetros de sincronização inválidos.")
+        return web.json_response(
+            await port.cycles.synchronize(data["module_uuid"], data["number"], data["tone"], revision)
+        )
     if action == "operate_group":
         return web.json_response(await manager.operate_group(data, confirmed, revision))
     if action in {"operate", "command"}:
@@ -146,6 +152,7 @@ async def lifecycle(app):
                 port._connected = False
                 port.received.clear()
                 port.tests.disconnected()
+                port.cycles.disconnected()
                 await port.client.close()
                 delay = min(delay * 2, 30)
             await asyncio.sleep(delay)
@@ -155,6 +162,7 @@ async def lifecycle(app):
     task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await task
+    await port.cycles.close()
     port.tests.close()
     await port.client.close()
 

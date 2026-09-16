@@ -1,4 +1,4 @@
-# Dingtian Manager 1.6.0
+# Dingtian Manager 1.7.0
 
 Instale ou atualize pela loja de Aplicativos do Home Assistant. Repositório: https://github.com/aoliveira07/smart-house-dingtian-manager. Requer Core 2026.9.2+, Supervisor e MQTT configurado com Discovery.
 
@@ -20,7 +20,7 @@ Não carregue o YAML de referência junto com entidades de mesmo unique_id geren
 
 Use backup do HA para recuperação integral. O Excel é um relatório das saídas cadastradas, não um backup restaurável. Dados persistem em /data. Remover uma saída ou módulo limpa as entidades correspondentes. O painel é restrito a administradores via Ingress.
 
-## Interface 1.6.0
+## Interface 1.7.0
 
 - Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
 - Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
@@ -37,3 +37,17 @@ Validação: 53 testes Python, 20 testes da interface; CI também valida Home As
 - Alterar cômodo pede confirmação antes de salvar, preservando código, identidade e marcação Usar da entidade.
 - Ligar seleção e Desligar seleção funcionam em Todos os cômodos e Sem cômodo, atuando nas saídas exibidas, inclusive as desmarcadas em Usar.
 - Cadastros antigos não são renomeados automaticamente: nomes conflitantes precisam ser corrigidos ao editar o módulo.
+
+## Iluminação cíclica de três tons
+
+No aplicativo, abra o módulo e expanda **Avançado** ao final da página. Apenas saídas marcadas como Usar aparecem. Selecione **Cíclico de 3**, organize as três posições e informe o intervalo entre o feedback OFF e o envio de ON. Trocar uma posição permuta as opções para evitar duplicatas. O padrão é 500 ms; ajuste conforme a luminária (100–10000 ms).
+
+Na primeira configuração, escolha a tonalidade observada e clique em **Sincronizar tonalidade atual**. Isso apenas ajusta a memória. Com a luz desligada, escolha a última tonalidade conhecida; o próximo ON avançará uma posição. Ao mudar a sequência, substituir o serial ou reativar uma saída, sincronize novamente.
+
+A entidade de luz permanece. O aplicativo cria também `select.<id_da_luz>_tonalidade`, com Quente, Neutro e Frio. O ID é preservado após renomeações. Selecionar uma opção executa os ciclos necessários e deixa a luz ligada; aguarda feedback real em cada etapa. Comandos pelo interruptor físico também avançam a memória em cada OFF → ON observado. Mensagens retidas apenas estabelecem o estado inicial, sem contar um ciclo. Documentação da entidade: [MQTT Select](https://www.home-assistant.io/integrations/select.mqtt/).
+
+Sem feedback em 5 segundos, a sequência para, registra erro e solicita sincronização. A última posição conhecida é conservada, mas não anunciada como confirmada enquanto houver incerteza. Não há reenvio nem retomada de sequência após reinício. Durante uma sequência, o canal não aceita outro comando individual/coletivo do Manager; um novo destino de tonalidade substitui o anterior. O feedback continua sendo processado.
+
+A posição sobrevive ao reinício. Alterações físicas ocorridas enquanto o aplicativo estava desconectado não podem ser reconstruídas: use sincronização manual se a tonalidade observada divergir. A tonalidade é calculada pelo ciclo elétrico, não medida por um sensor de cor. Esta função pertence ao aplicativo/add-on; a integração legada não executa sequências cíclicas. Canais Normal mantêm o comportamento anterior.
+
+Validação automatizada usa MQTT simulado, integração real com Home Assistant e containers amd64/aarch64. A temporização na luminária física deve ser conferida na instalação.

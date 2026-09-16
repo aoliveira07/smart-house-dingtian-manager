@@ -15,7 +15,7 @@ from .models import (
     update_module,
     validate_storage,
 )
-from .mqtt_discovery import discovery
+from .mqtt_discovery import discovery, tone_discovery
 
 
 class Manager:
@@ -51,10 +51,23 @@ class Manager:
                     "entity_type": c["entity_type"],
                     "payload": payload,
                 }
+                if c.get("mode") == "cyclic_3":
+                    if not getattr(self.port, "cycles", None):
+                        raise ManagerError("Iluminação cíclica requer o aplicativo Dingtian Manager.")
+                    topic, payload = tone_discovery(state, module, c, self.port.prefix)
+                    targets[topic] = {
+                        "module_uuid": module["module_uuid"],
+                        "number": c["number"],
+                        "entity_type": "select",
+                        "payload": payload,
+                    }
         return targets
 
     async def mutate(self, action, revision, data, confirmed=False):
         async with self.lock:
+            cycles = getattr(self.port, "cycles", None)
+            if cycles and cycles.busy_module(data.get("module_uuid")):
+                raise ManagerError("Aguarde a sequência de tonalidade antes de editar o módulo.")
             if type(revision) is not int or revision != self.state["revision"]:
                 raise ManagerError("Cadastro alterado em outra aba. Recarregue antes de salvar.")
             if self.state["prepared_removal"]:
@@ -102,6 +115,9 @@ class Manager:
                         if any(c.get("test", {}).get("status") == "pending" for c in live["channels"]):
                             raise ManagerError("Aguarde os comandos pendentes antes de substituir o módulo.")
                         module["serial"] = replacement
+                        for channel in module["channels"]:
+                            if channel.get("mode") == "cyclic_3":
+                                channel.update(current_position=None, cycle_needs_sync=True)
                 elif action == "save":
                     updated = update_module(module, data)
                     if updated["display_name"] != module["display_name"]:
@@ -125,6 +141,8 @@ class Manager:
             # Journal name updates so crashes between save and registry update can be retried.
             desired["name_updates"] = self.port.name_updates(before, desired)
             await self.port.save(desired)
+            if cycles:
+                cycles.reconfigure(before, desired)
             self.state = desired
             await self._reconcile()
             return self.snapshot()
@@ -188,6 +206,9 @@ class Manager:
             self.state["applied_revision"] = self.state["revision"]
             self.state["error"] = None
             await self.port.save(self.state)
+            cycles = getattr(self.port, "cycles", None)
+            if cycles:
+                await cycles.publish_all()
         except Exception as exc:
             self.state["error"] = f"Sincronização pendente: {exc}"
             await self.port.save(self.state)
@@ -208,6 +229,9 @@ class Manager:
             if not module or type(number) is not int or not 1 <= number <= module["channel_count"]:
                 raise ManagerError("Canal inválido.")
             c = module["channels"][number - 1]
+            cycles = getattr(self.port, "cycles", None)
+            if cycles and cycles.busy(mid, number):
+                raise ManagerError("Sequência de tonalidade em andamento neste canal.")
             if module["deleted"] or self.state["prepared_removal"] or self.state["error"]:
                 raise ManagerError("Canal inativo ou sincronização pendente.")
             if not self.port.connected:
@@ -254,6 +278,9 @@ class Manager:
                     selected.append((mid, c["number"]))
             if not selected:
                 raise ManagerError("Nenhuma saída neste filtro.")
+            cycles = getattr(self.port, "cycles", None)
+            if cycles and any(cycles.busy(mid, n) for mid, n in selected):
+                raise ManagerError("Aguarde a sequência de tonalidade antes do comando coletivo.")
             sent = []
             for mid, number in selected:
                 m = self.state["modules"][mid]

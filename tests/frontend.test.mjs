@@ -254,3 +254,24 @@ test('all rooms and unassigned room allow group actions on visible unused output
  assert.equal(node.shadowRoot.querySelectorAll('.channel:not([hidden])').length,7);assert.equal(node.shadowRoot.querySelector('.group-off').disabled,false);
  node.shadowRoot.querySelector('.group-off').click();await tick();assert.equal(requests.filter(r=>r.action==='operate_group').at(-1).data.area_id,'');
 });
+
+test('advanced is collapsed, used channels only, permutation autosave and synchronization never operates relay',async()=>{
+ const m=moduleData(1,8);m.channels[0].enabled=true;
+ const {node,requests,data}=await panel([m]);data.cyclic_supported=true;await node.load();await node.navigate(m.module_uuid);
+ const details=node.shadowRoot.querySelector('.advanced');assert.ok(details);assert.equal(details.open,false);
+ assert.equal(details.querySelectorAll('.advanced-channel').length,1);details.open=true;details.dispatchEvent(new Event('toggle'));
+ let mode=node.shadowRoot.querySelector('[aria-label="Comportamento R1"]');assert.equal(mode.value,'normal');mode.value='cyclic_3';mode.dispatchEvent(new Event('change'));await tick();
+ assert.equal(requests.filter(r=>r.action==='save').at(-1).data.channels[0].mode,'cyclic_3');
+ const position=node.shadowRoot.querySelector('[aria-label="Posição 1 R1"]');position.value='cool';position.dispatchEvent(new Event('change'));await tick();
+ const c=requests.filter(r=>r.action==='save').at(-1).data.channels[0];assert.deepEqual(c.sequence,['cool','neutral','warm']);assert.equal(new Set(c.sequence).size,3);
+ const interval=node.shadowRoot.querySelector('[aria-label="Intervalo R1"]');interval.value='750';interval.dispatchEvent(new Event('change'));await tick();
+ assert.equal(requests.filter(r=>r.action==='save').at(-1).data.channels[0].pulse_interval_ms,750);
+ node.shadowRoot.querySelector('[aria-label="Sincronizar tonalidade R1"]').value='neutral';node.shadowRoot.querySelector('[data-tone-sync="1"]').click();await tick();
+ assert.deepEqual(requests.find(r=>r.action==='cyclic_sync').data,{module_uuid:m.module_uuid,number:1,tone:'neutral'});
+ assert.equal(requests.filter(r=>r.action==='command'||r.action==='operate').length,0);
+ assert.equal(node.shadowRoot.querySelector('.advanced').open,true);
+ data.modules[m.module_uuid].channels[0].current_position=1;data.modules[m.module_uuid].channels[0].cycle_busy=true;await node.load();
+ assert.match(node.shadowRoot.querySelector('[data-tone-status="1"]').textContent,/Neutro.*Alterando/);
+ assert.equal(node.shadowRoot.querySelector('[data-tone-sync="1"]').disabled,true);
+ assert.equal(node.shadowRoot.querySelector('[data-test="1"] button').disabled,true);
+});
