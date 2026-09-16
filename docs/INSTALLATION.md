@@ -1,4 +1,4 @@
-# Dingtian Manager 1.8.0
+# Dingtian Manager 1.9.0
 
 Instale ou atualize pela loja de Aplicativos do Home Assistant. Repositório: https://github.com/aoliveira07/smart-house-dingtian-manager. Requer Core 2026.9.2+, Supervisor e MQTT configurado com Discovery.
 
@@ -20,7 +20,7 @@ Não carregue o YAML de referência junto com entidades de mesmo unique_id geren
 
 Use backup do HA para recuperação integral. O Excel é um relatório das saídas cadastradas, não um backup restaurável. Dados persistem em /data. Remover uma saída ou módulo limpa as entidades correspondentes. O painel é restrito a administradores via Ingress.
 
-## Interface 1.8.0
+## Interface 1.9.0
 
 - Cabeçalhos compactos: título à esquerda, módulo e utilização ao centro, ação de navegação à direita.
 - Lista sem busca, filtro, comandos coletivos, importação ou manutenção. Edição de nome/serial continua no lápis.
@@ -44,7 +44,7 @@ No aplicativo, abra o módulo e expanda **Avançado** ao final da página. Apena
 
 Na primeira configuração, escolha a tonalidade observada e clique em **Sincronizar tonalidade atual**. Isso apenas ajusta a memória. Com a luz desligada, escolha a última tonalidade conhecida; o próximo ON avançará uma posição. Ao mudar a sequência, substituir o serial ou reativar uma saída, sincronize novamente.
 
-A entidade de luz permanece como uma única `light`. Para Cíclico de 3, ela apresenta o seletor RGB nativo do Home Assistant, com as cores Quente, Neutro e Frio; não cria uma entidade `select` separada. A escolha de qualquer cor no seletor é associada à tonalidade configurada mais próxima e executa os ciclos necessários, aguardando feedback real em cada etapa. Comandos pelo interruptor físico também avançam a memória em cada OFF → ON observado. Mensagens retidas apenas estabelecem o estado inicial, sem contar um ciclo. A atualização remove automaticamente a antiga entidade `select` de tonalidade. Documentação da entidade: [MQTT Light](https://www.home-assistant.io/integrations/light.mqtt/).
+A entidade de luz permanece como uma única `light`. Para Cíclico de 3, ela mostra somente os três efeitos nativos **Quente**, **Neutro** e **Frio**, sem seletor RGB livre nem dimmer, e não cria uma entidade `select` separada. A escolha de uma tonalidade executa os ciclos necessários, aguardando feedback real em cada etapa. Comandos pelo interruptor físico também avançam a memória em cada OFF → ON observado. Mensagens retidas apenas estabelecem o estado inicial, sem contar um ciclo. A atualização remove automaticamente a antiga entidade `select` de tonalidade. Documentação da entidade: [MQTT Light](https://www.home-assistant.io/integrations/light.mqtt/).
 
 Sem feedback em 5 segundos, a sequência para, registra erro e solicita sincronização. A última posição conhecida é conservada, mas não anunciada como confirmada enquanto houver incerteza. Não há reenvio nem retomada de sequência após reinício. Durante uma sequência, o canal não aceita outro comando individual/coletivo do Manager; um novo destino de tonalidade substitui o anterior. O feedback continua sendo processado.
 

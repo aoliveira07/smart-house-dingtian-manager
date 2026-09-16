@@ -74,7 +74,7 @@ async def test_feedback_only_duplicate_retained_baseline_and_persistence(tmp_pat
     await restarted.load()
     assert restarted.state["modules"][mid]["channels"][0]["current_position"] == 1
     validate_storage(manager.state)
-    assert client.published[-1][1] == "255,234,202"
+    assert client.published[-1][1] == "Neutro"
     # Reconnect retained values seed a baseline without replaying an OFF->ON edge.
     port.cycles.disconnected()
     await feedback(client, port, address["state_topic"], "ON", True)
@@ -100,8 +100,7 @@ async def test_target_cycles_include_next_on_when_initially_off(tmp_path, relay,
     await port.cycles.tasks[(mid, 1)]
     assert [p[1] for p in commands(client)] == expected
     assert all(p[2:] == (0, False) for p in commands(client))
-    rgb = {"Quente": "255,156,74", "Neutro": "255,234,202", "Frio": "176,210,255"}
-    assert client.published[-1][1] == rgb[target]
+    assert client.published[-1][1] == target
     assert not c.get("cycle_error")
     await port.cycles.close()
 
@@ -142,8 +141,8 @@ async def test_latest_target_no_concurrent_sequence_and_module_edits_blocked(tmp
 
 async def test_interval_measured_after_off_feedback_and_retained_commands_ignored(tmp_path):
     client, port, manager, mid, c, address = await configured(tmp_path)
-    control = cyclic_topics(manager.state, manager.state["modules"][mid], c)["rgb_command_topic"]
-    client.receive(control, "176,210,255", True)
+    control = cyclic_topics(manager.state, manager.state["modules"][mid], c)["effect_command_topic"]
+    client.receive(control, "Frio", True)
     assert not port.cycles.tasks and not commands(client)
     sent = []
     original = client.publish
@@ -157,14 +156,14 @@ async def test_interval_measured_after_off_feedback_and_retained_commands_ignore
             client.receive(address["state_topic"], payload)
 
     client.publish = publish
-    client.receive(control, "255,234,202")
+    client.receive(control, "Neutro")
     await port.cycles.tasks[(mid, 1)]
     assert sent[1][1] - sent[0][1] >= 0.15
     assert c["current_position"] == 1
     await port.cycles.close()
 
 
-async def test_validation_reorder_identity_and_single_rgb_light(tmp_path):
+async def test_validation_reorder_identity_and_single_three_tone_light(tmp_path):
     client, port, manager, mid, c, address = await configured(tmp_path)
     m = deepcopy(manager.state["modules"][mid])
     m["channels"][0]["sequence"] = ["warm"] * 3
@@ -197,19 +196,22 @@ async def test_validation_reorder_identity_and_single_rgb_light(tmp_path):
     await port.cycles.close()
 
 
-async def test_rgb_command_and_power_share_one_light_entity(tmp_path):
+async def test_effect_command_and_power_share_one_light_entity(tmp_path):
     client, port, manager, mid, c, address = await configured(tmp_path)
     control = cyclic_topics(manager.state, manager.state["modules"][mid], c)
     targets = manager.targets(manager.state)
     assert len(targets) == 1
     payload = next(iter(targets.values()))["payload"]
-    assert payload["rgb_command_topic"] == control["rgb_command_topic"]
-    assert payload["rgb_state_topic"] == control["rgb_state_topic"]
+    assert payload["effect_command_topic"] == control["effect_command_topic"]
+    assert payload["effect_state_topic"] == control["effect_state_topic"]
+    assert payload["effect_list"] == ["Quente", "Neutro", "Frio"]
+    assert "rgb_command_topic" not in payload
+    assert "brightness_command_topic" not in payload
     assert payload["command_topic"] == control["command_topic"]
     assert payload["state_topic"] == address["state_topic"]
     assert "select" not in " ".join(targets)
     echo_commands(client, port)
-    client.receive(control["rgb_command_topic"], "176,210,255")
+    client.receive(control["effect_command_topic"], "Frio")
     await port.cycles.tasks[(mid, 1)]
     assert c["current_position"] == 2
     client.receive(control["command_topic"], "OFF")

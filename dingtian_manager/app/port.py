@@ -203,7 +203,7 @@ class RemotePort:
         state["areas"] = sorted(self.areas.values(), key=lambda a: a["name"].casefold())
         state["cyclic_supported"] = True
         state.update(
-            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.8.0"
+            broker_connected=self.connected, discovery_prefix=self.prefix, application_version="1.9.0"
         )
         if self.error or self.legacy_active:
             state["error"] = (

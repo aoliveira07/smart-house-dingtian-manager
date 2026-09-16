@@ -1,3 +1,8 @@
+# 1.9.0
+
+- A luz Cíclico de 3 passa a expor apenas os efeitos Quente, Neutro e Frio no Home Assistant.
+- Removidos o seletor RGB livre e o dimmer da entidade cíclica, mantendo uma única entidade light.
+
 # 1.8.0
 
 - A iluminação cíclica passa a usar uma única entidade light RGB, preservando o ID da luz.

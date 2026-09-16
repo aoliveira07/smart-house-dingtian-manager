@@ -1,4 +1,4 @@
-"""One RGB light entity, controlled through real HA MQTT discovery and feedback."""
+"""One fixed-effect light entity, controlled through real HA MQTT discovery and feedback."""
 
 import asyncio
 from copy import deepcopy
@@ -14,7 +14,7 @@ from dingtian_manager.app.port import RemotePort
 
 
 @pytest.mark.usefixtures("socket_enabled")
-async def test_rgb_light_feedback_and_single_entity(
+async def test_three_tone_light_feedback_and_single_entity(
     hass, mqtt_mock, hass_client, hass_access_token, tmp_path
 ):
     mqtt_mock.conf = mqtt_mock.return_value.conf
@@ -59,19 +59,18 @@ async def test_rgb_light_feedback_and_single_entity(
         await port.cycles.events.join()
         await port.cycles.synchronize(mid, 1, "warm", 2)
         await hass.async_block_till_done()
-        assert hass.states.get(light_id).attributes["rgb_color"] == (255, 156, 74)
+        assert hass.states.get(light_id).attributes["effect_list"] == ["Quente", "Neutro", "Frio"]
+        assert hass.states.get(light_id).attributes["effect"] == "Quente"
+        assert "brightness" not in hass.states.get(light_id).attributes
+        assert "rgb_color" not in hass.states.get(light_id).attributes
         await hass.services.async_call(
-            "light", "turn_on", {"entity_id": light_id, "rgb_color": [176, 210, 255]}, blocking=True
+            "light", "turn_on", {"entity_id": light_id, "effect": "Frio"}, blocking=True
         )
         for _ in range(200):
-            if hass.states.get(light_id).attributes.get("rgb_color") == (
-                176,
-                210,
-                255,
-            ) and not port.cycles.busy(mid, 1):
+            if hass.states.get(light_id).attributes.get("effect") == "Frio" and not port.cycles.busy(mid, 1):
                 break
             await asyncio.sleep(0.02)
-        assert hass.states.get(light_id).attributes["rgb_color"] == (176, 210, 255)
+        assert hass.states.get(light_id).attributes["effect"] == "Frio"
         assert manager.state["modules"][mid]["channels"][0]["current_position"] == 2
         commands = [c.args[:4] for c in mqtt_mock.async_publish.call_args_list if "/in/" in c.args[0]]
         assert commands == [
@@ -82,7 +81,7 @@ async def test_rgb_light_feedback_and_single_entity(
         await asyncio.sleep(0.1)
         await port.cycles.events.join()
         await hass.async_block_till_done()
-        assert hass.states.get(light_id).attributes["rgb_color"] == (255, 156, 74)
+        assert hass.states.get(light_id).attributes["effect"] == "Quente"
         module = deepcopy(manager.state["modules"][mid])
         module["channels"][0]["mode"] = "normal"
         await manager.mutate("save", 2, module)

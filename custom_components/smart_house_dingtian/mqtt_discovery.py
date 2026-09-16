@@ -2,18 +2,15 @@
 
 from .const import VERSION
 
-# These are visual values for Home Assistant's RGB light picker. The relay still
-# has only three physical tones; arbitrary picker values are mapped to the nearest
-# configured tone by the Manager.
-TONE_RGB = {"warm": (255, 156, 74), "neutral": (255, 234, 202), "cool": (176, 210, 255)}
+TONE_EFFECTS = ["Quente", "Neutro", "Frio"]
 
 
 def cyclic_topics(state, module, channel):
     base = f"shd/{state['manager_uuid']}/{module['module_uuid']}/r{channel['number']}/cyclic"
     return {
         "command_topic": base + "/power/set",
-        "rgb_command_topic": base + "/rgb/set",
-        "rgb_state_topic": base + "/rgb/state",
+        "effect_command_topic": base + "/tone/set",
+        "effect_state_topic": base + "/tone/state",
     }
 
 
@@ -64,11 +61,11 @@ def discovery(state, module, channel, prefix):
     else:
         payload["schema"] = "basic"
         if channel.get("mode") == "cyclic_3":
-            # Keep one light entity. Power and RGB commands enter the Manager,
-            # which confirms every relay transition before publishing its color.
+            # Keep one light entity. Fixed effects expose only the three physical
+            # tones and deliberately omit RGB/brightness support.
             payload.update(
                 **cyclic_topics(state, module, channel),
-                rgb_command_template="{{ red }},{{ green }},{{ blue }}",
+                effect_list=TONE_EFFECTS,
                 payload_on="ON",
                 payload_off="OFF",
                 on_command_type="last",
